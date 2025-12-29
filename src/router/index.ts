@@ -1,31 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import StandingsView from '@/app/standings/views/StandingsView.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: HomeView, // page d'accueil chargée directement
-  },
-  {
-    path: '/about',
-    name: 'about',
-    component: () => import('../views/AboutView.vue'),
+    name: 'standings',
+    component: StandingsView,
   },
   {
     path: '/players',
     name: 'players',
-    component: () => import('../views/PlayersView.vue'),
+    component: () => import('@/app/players/views/PlayersStatsView.vue'),
   },
   {
     path: '/games',
     name: 'games',
-    component: () => import('../views/GamesView.vue'),
-  },
-  {
-    path: '/standings',
-    name: 'standings',
-    component: () => import('../app/standings/pages/StandingsView.vue'),
+    component: () => import('@/app/games/views/GamesView.vue'),
   },
 ]
 

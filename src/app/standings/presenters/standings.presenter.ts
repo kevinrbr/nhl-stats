@@ -7,5 +7,6 @@ export function standingsPresenter(raw: any[]) {
     points: item.points,
     gamesPlayed: item.gamesPlayed,
     divisionName: item.divisionName,
+    teamAbbrev: item.teamAbbrev.default,
   }));
 }

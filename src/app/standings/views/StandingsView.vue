@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useStandings } from "../queries/useStandings";
+import { useStandingsQuery } from "@/app/standings/queries/useStandingsQuery";
 
 const DIVISION_MAP: Record<string, string> = {
   atlantique: "Atlantic",
@@ -31,7 +31,7 @@ const DIVISION_MAP: Record<string, string> = {
 type SortKey = "teamName" | "points" | "wins" | "losses" | "gamesPlayed";
 type SortOrder = "asc" | "desc";
 
-const { data: rankings } = useStandings();
+const { data: rankings } = useStandingsQuery();
 
 const sortKey = ref<SortKey>("points");
 const sortOrder = ref<SortOrder>("desc");

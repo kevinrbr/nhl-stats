@@ -22,27 +22,19 @@ import { RouterLink, RouterView } from 'vue-router'
       </RouterLink>
 
       <RouterLink 
-        to="/about" 
+        to="/players" 
         class="no-underline text-white hover:opacity-80"
         active-class="font-semibold"
       >
-        Joueurs
+        Players
       </RouterLink>
 
       <RouterLink 
-        to="/about" 
+        to="/games" 
         class="no-underline text-white hover:opacity-80"
         active-class="font-semibold"
       >
         Games
-      </RouterLink>
-
-      <RouterLink 
-        to="/standings" 
-        class="no-underline text-white hover:opacity-80"
-        active-class="font-semibold"
-      >
-        Classement
       </RouterLink>
     </nav>
   </header>
