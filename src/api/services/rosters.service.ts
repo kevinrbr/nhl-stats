@@ -1,7 +1,6 @@
 import type { ApiPlayersByPosition } from "@/api/types/players.api";
 
 export const getRostersByTeam = async (teamId: string): Promise<ApiPlayersByPosition> => {
-    console.log(teamId);
   const res = await fetch(
     `/api-nhl/v1/roster/${teamId}/current`
   );

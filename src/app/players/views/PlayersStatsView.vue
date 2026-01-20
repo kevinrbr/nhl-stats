@@ -7,7 +7,6 @@ const selectedPlayerId = ref<string>('8482947')
 
 const handleSelectPlayer = (playerId: number) => {
   selectedPlayerId.value = playerId.toString();
-  console.log(selectedPlayerId.value);
 }
 
 </script>

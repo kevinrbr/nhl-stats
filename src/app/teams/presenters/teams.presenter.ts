@@ -1,37 +1,51 @@
-export const teamLastGamesPresenter = (scheduleData: any, team: string) => {
-  const games = scheduleData.games ?? scheduleData.gamesByMonth?.[0]?.games ?? [];
+export interface TeamGameDetails {
+  id: number;
+  date: string;
+  isHome: boolean;
+  homeTeam: {
+    abbrev: string;
+    name: string;
+    sog: number;
+    score: number;
+    logo: string;
+  };
+  awayTeam: {
+    abbrev: string;
+    name: string;
+    sog: number;
+    score: number;
+    logo: string;
+  };
+}
 
-  const sortedGames = games
-    .filter((game: any) => game.gameState === "OFF")
-    .sort(
-      (a: any, b: any) =>
-        new Date(a.startTimeUTC).getTime() - new Date(b.startTimeUTC).getTime()
-    )
-    .slice(0, 20);
-
-  return sortedGames.map((g: any) => {
-    const home = g.homeTeam || g.home; // selon la structure de l'API
-    const away = g.awayTeam || g.away;
-    const isHome = home.abbrev === team;
+export function teamLastGamesPresenter(
+  gamesData: any[],
+  teamAbbrev: string
+): TeamGameDetails[] {
+  return gamesData.map((gameData) => {
+    const { gameInfo, boxscore } = gameData;
+    const home = boxscore.homeTeam;
+    const away = boxscore.awayTeam;
+    const isHome = home.abbrev === teamAbbrev;
 
     return {
-      id: g.id,
-      date: g.startTimeUTC,
+      id: gameInfo.id,
+      date: gameInfo.startTimeUTC,
       isHome,
       homeTeam: {
         abbrev: home.abbrev,
-        name: home.commonName?.default || home.name,
-        sog: home.sog,
-        score: home.score,
+        name: home.commonName.default,
+        sog: home.sog || 0,
+        score: home.score || 0,
         logo: home.logo,
       },
       awayTeam: {
         abbrev: away.abbrev,
-        name: away.commonName?.default || away.name,
-        sog: away.sog,
-        score: away.score,
+        name: away.commonName.default,
+        sog: away.sog || 0,
+        score: away.score || 0,
         logo: away.logo,
       },
     };
   });
-};
+}
