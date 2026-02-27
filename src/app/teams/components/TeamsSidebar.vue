@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { useStandingsQuery } from '@/app/standings/queries/useStandingsQuery';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
+
+const props = withDefaults(defineProps<{
+  selectedTeam?: string;
+}>(), {
+  selectedTeam: 'COL',
+});
 
 const emit = defineEmits<{
   (e: 'select-team', teamAbbrev: string): void
 }>();
 
-const selectedTeam = ref<string>('COL');
 const { data: standings } = useStandingsQuery();
 
 const sortedTeams = computed(() => {
@@ -17,7 +22,6 @@ const sortedTeams = computed(() => {
 });
 
 const handleTeamClick = (teamAbbrev: string) => {
-  selectedTeam.value = teamAbbrev;
   emit('select-team', teamAbbrev);
 };
 </script>
@@ -34,7 +38,7 @@ const handleTeamClick = (teamAbbrev: string) => {
         <button
           @click="handleTeamClick(team.teamAbbrev)"
           class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800 transition-colors text-left"
-          :class="{ 'bg-gray-800': selectedTeam === team.teamAbbrev }"
+          :class="{ 'bg-gray-800': props.selectedTeam === team.teamAbbrev }"
         >
           <img 
             :src="team.logo" 

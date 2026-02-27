@@ -15,11 +15,17 @@ const handleSelectTeam = (teamAbbrev: string) => {
     <aside
       class="w-[250px] pr-4 sticky self-start top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain"
     >
-      <TeamsSidebar @select-team="handleSelectTeam" />
+      <TeamsSidebar
+        :selected-team="selectedTeam"
+        @select-team="handleSelectTeam"
+      />
     </aside>
 
     <section class="flex-1">
-      <TeamDashboard :team="selectedTeam" />
+      <TeamDashboard
+        :team="selectedTeam"
+        @select-team="handleSelectTeam"
+      />
     </section>
   </section>
 </template>

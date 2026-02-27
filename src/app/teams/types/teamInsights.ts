@@ -25,19 +25,12 @@ export interface TeamHomeAwaySplitInsight {
 }
 
 export type TeamInsightTone = 'neutral' | 'positive' | 'negative';
-export type TeamInsightCardVariant = 'emerald' | 'amber' | 'slate';
 
-export interface TeamInsightMetric {
+export interface TeamKpiMetric {
   id: string;
   label: string;
   value: string;
+  meta?: string;
   tone?: TeamInsightTone;
   helpText?: string;
-}
-
-export interface TeamInsightCardData {
-  title: string;
-  subtitle: string;
-  variant: TeamInsightCardVariant;
-  metrics: TeamInsightMetric[];
 }

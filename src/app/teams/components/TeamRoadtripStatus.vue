@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { TeamTravelStatus } from '../composables/useTeamRoadTrip';
+import type { TeamTravelStatus } from '@/app/teams/composables/useTeamRoadTrip';
 
 const props = withDefaults(defineProps<{
   travelStatus: TeamTravelStatus | null;
@@ -22,32 +22,32 @@ const formatDate = (dateString: string) => {
 const getFatigueUi = (score: number): { label: string; textClass: string; barClass: string } => {
   if (score <= 3) {
     return {
-      label: 'Faible',
-      textClass: 'text-green-400',
-      barClass: 'bg-green-500',
+      label: 'Low',
+      textClass: 'text-emerald-300',
+      barClass: 'bg-emerald-500',
     };
   }
 
   if (score <= 6) {
     return {
-      label: 'Moderee',
-      textClass: 'text-yellow-400',
-      barClass: 'bg-yellow-500',
+      label: 'Medium',
+      textClass: 'text-zinc-300',
+      barClass: 'bg-zinc-500',
     };
   }
 
   if (score <= 8) {
     return {
-      label: 'Elevee',
-      textClass: 'text-orange-400',
-      barClass: 'bg-orange-500',
+      label: 'High',
+      textClass: 'text-amber-300',
+      barClass: 'bg-amber-500',
     };
   }
 
   return {
-    label: 'Tres elevee',
-    textClass: 'text-red-400',
-    barClass: 'bg-red-500',
+    label: 'Very high',
+    textClass: 'text-rose-300',
+    barClass: 'bg-rose-500',
   };
 };
 
@@ -56,28 +56,6 @@ const fatigueUi = computed(() => getFatigueUi(props.travelStatus?.fatigueScore ?
 const awayStreakLabel = computed(() => {
   if (!props.travelStatus || props.travelStatus.awayStreakGames === 0) return '0';
   return `${props.travelStatus.awayStreakGames} (${props.travelStatus.awayStreakWindowDays}j)`;
-});
-
-const nextOpponent = computed(() => {
-  if (!props.travelStatus) return null;
-
-  return props.travelStatus.nextGame.isHome
-    ? props.travelStatus.nextGame.awayTeam
-    : props.travelStatus.nextGame.homeTeam;
-});
-
-const nextGameDateLabel = computed(() => {
-  if (!props.travelStatus) return '-';
-  return formatDate(props.travelStatus.nextGame.date);
-});
-
-const nextGameWhenLabel = computed(() => {
-  if (!props.travelStatus) return '-';
-
-  const dayDiff = props.travelStatus.daysUntilNextGame;
-  if (dayDiff === 0) return "Aujourd'hui";
-  if (dayDiff === 1) return 'Demain';
-  return `Dans ${dayDiff}j`;
 });
 
 const situationTitle = computed(() => {
@@ -124,38 +102,37 @@ const dateWindowLabel = computed(() => {
 </script>
 
 <template>
-  <div class="bg-gray-800 rounded-lg p-4">
+  <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4">
     <div class="flex items-center justify-between mb-3 gap-3">
-      <h3 class="text-white text-sm font-semibold">Road Trip Status</h3>
-      <span class="text-gray-400 text-xs bg-gray-900 rounded px-2 py-1">{{ dateWindowLabel }}</span>
+      <h3 class="text-zinc-100 text-sm font-semibold">Road Trip Status</h3>
+      <span class="text-zinc-400 text-xs bg-zinc-950 rounded px-2 py-1">{{ dateWindowLabel }}</span>
     </div>
 
     <div v-if="props.isLoading" class="space-y-2">
-      <div class="h-16 rounded bg-gray-700 animate-pulse"></div>
-      <div class="h-24 rounded bg-gray-700 animate-pulse"></div>
-      <div class="h-14 rounded bg-gray-700 animate-pulse"></div>
+      <div class="h-16 rounded bg-zinc-800/70 animate-pulse"></div>
+      <div class="h-24 rounded bg-zinc-800/70 animate-pulse"></div>
     </div>
 
     <div v-else-if="travelStatus" class="space-y-2">
-      <div class="bg-gray-900 rounded p-3 border border-gray-700/70">
+      <div class="bg-zinc-950/65 rounded p-3 border border-zinc-800/70">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-gray-500 text-[11px] uppercase tracking-wide mb-1">Situation</p>
-            <p class="text-white text-sm font-semibold">{{ situationTitle }}</p>
-            <p class="text-gray-300 text-xs mt-1 truncate">{{ situationDetail }}</p>
+            <p class="text-zinc-500 text-[11px] uppercase tracking-wide mb-1">Situation</p>
+            <p class="text-zinc-100 text-sm font-semibold">{{ situationTitle }}</p>
+            <p class="text-zinc-300 text-xs mt-1 truncate">{{ situationDetail }}</p>
           </div>
           <div class="text-right shrink-0">
-            <p class="text-gray-500 text-[11px] uppercase tracking-wide">Fatigue</p>
-            <p class="text-white text-xl leading-none font-bold mt-1">
+            <p class="text-zinc-500 text-[11px] uppercase tracking-wide">Fatigue</p>
+            <p class="text-zinc-100 text-xl leading-none font-bold mt-1">
               {{ travelStatus.fatigueScore }}
-              <span class="text-xs text-gray-400 font-medium">/10</span>
+              <span class="text-xs text-zinc-400 font-medium">/10</span>
             </p>
             <p class="text-[11px] mt-1" :class="fatigueUi.textClass">
               {{ fatigueUi.label }}
             </p>
           </div>
         </div>
-        <div class="mt-3 h-1.5 rounded bg-gray-700 overflow-hidden">
+        <div class="mt-3 h-1.5 rounded bg-zinc-700 overflow-hidden">
           <div
             class="h-full transition-all duration-300"
             :class="fatigueUi.barClass"
@@ -165,60 +142,38 @@ const dateWindowLabel = computed(() => {
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <div class="bg-gray-900 rounded p-3 border border-gray-700/60">
-          <p class="text-gray-500 text-[11px] uppercase tracking-wide mb-2">Rythme</p>
+        <div class="bg-zinc-950/65 rounded p-3 border border-zinc-800/70">
+          <p class="text-zinc-500 text-[11px] uppercase tracking-wide mb-2">Rhythm</p>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <p class="text-gray-400 text-xs">Repos</p>
-              <p class="text-white text-lg font-bold leading-tight">{{ travelStatus.restDays }}j</p>
+              <p class="text-zinc-400 text-xs">Rest</p>
+              <p class="text-zinc-100 text-lg font-bold leading-tight">{{ travelStatus.restDays }}j</p>
             </div>
             <div>
-              <p class="text-gray-400 text-xs">Serie ext.</p>
-              <p class="text-white text-lg font-bold leading-tight">{{ awayStreakLabel }}</p>
+              <p class="text-zinc-400 text-xs">Away streak</p>
+              <p class="text-zinc-100 text-lg font-bold leading-tight">{{ awayStreakLabel }}</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-gray-900 rounded p-3 border border-gray-700/60">
-          <p class="text-gray-500 text-[11px] uppercase tracking-wide mb-2">Voyage</p>
+        <div class="bg-zinc-950/65 rounded p-3 border border-zinc-800/70">
+          <p class="text-zinc-500 text-[11px] uppercase tracking-wide mb-2">Travel</p>
           <div class="flex items-end justify-between gap-3">
-            <p class="text-white text-lg font-bold leading-tight">
+            <p class="text-zinc-100 text-lg font-bold leading-tight">
               {{ travelStatus.nextLegDistanceKm.toLocaleString() }}
-              <span class="text-xs text-gray-400 font-medium">km</span>
+              <span class="text-xs text-zinc-400 font-medium">km</span>
             </p>
-            <p class="text-gray-400 text-xs">Prochain trajet</p>
+            <p class="text-zinc-400 text-xs">Next leg</p>
           </div>
-          <p class="text-gray-400 text-xs mt-1">
+          <p class="text-zinc-400 text-xs mt-1">
             Total {{ travelStatus.totalTripDistanceKm.toLocaleString() }} km
           </p>
-        </div>
-
-        <div class="sm:col-span-2 bg-gray-900 rounded p-3 border border-gray-700/60">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="text-gray-500 text-[11px] uppercase tracking-wide mb-1">Prochain match</p>
-              <div v-if="nextOpponent" class="flex items-center gap-2 min-w-0">
-                <img
-                  :src="nextOpponent.logo"
-                  :alt="nextOpponent.name"
-                  class="w-6 h-6 object-contain"
-                />
-                <span class="text-white text-sm font-semibold truncate">
-                  {{ nextOpponent.name }}
-                </span>
-              </div>
-            </div>
-            <p class="text-gray-300 text-xs text-right shrink-0">
-              {{ nextGameWhenLabel }}<br>
-              {{ nextGameDateLabel }}
-            </p>
-          </div>
         </div>
       </div>
     </div>
 
     <div v-else class="text-center py-6">
-      <p class="text-gray-400 text-sm">Statut de voyage indisponible.</p>
+      <p class="text-zinc-400 text-sm">Statut de voyage indisponible.</p>
     </div>
   </div>
 </template>
