@@ -74,11 +74,16 @@ const accentClasses: Record<TeamInsightCardVariant, string> = {
           <p class="text-zinc-400 text-xs">{{ metric.label }}</p>
           <span
             v-if="metric.helpText"
-            class="inline-flex items-center text-zinc-500 hover:text-zinc-300 transition-colors cursor-help"
-            :title="metric.helpText"
+            class="relative inline-flex items-center text-zinc-500 hover:text-zinc-300 transition-colors cursor-help group/help"
             :aria-label="metric.helpText"
+            tabindex="0"
           >
             <CircleHelp class="w-3.5 h-3.5" />
+            <span
+              class="pointer-events-none absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-[11px] text-zinc-200 opacity-0 shadow-lg transition-opacity duration-150 group-hover/help:opacity-100 group-focus-visible/help:opacity-100"
+            >
+              {{ metric.helpText }}
+            </span>
           </span>
         </div>
         <p class="text-base font-semibold mt-1 leading-none" :class="toneClass(metric.tone)">

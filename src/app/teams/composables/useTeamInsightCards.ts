@@ -23,6 +23,7 @@ const DEFAULT_SPLIT_METRICS: TeamInsightMetric[] = [
 
 const formatPercent = (value: number): string => `${Math.round(value)}%`;
 const formatAverage = (value: number): string => value.toFixed(1);
+const SPLIT_TONE_THRESHOLD = 3;
 
 function getToneFromWinPct(winPct: number): TeamInsightTone {
   if (winPct >= 50) return 'positive';
@@ -30,6 +31,8 @@ function getToneFromWinPct(winPct: number): TeamInsightTone {
 }
 
 function getSplitTone(current: number, compared: number): TeamInsightTone {
+  const diff = current - compared;
+  if (Math.abs(diff) < SPLIT_TONE_THRESHOLD) return 'neutral';
   if (current > compared) return 'positive';
   if (current < compared) return 'negative';
   return 'neutral';
