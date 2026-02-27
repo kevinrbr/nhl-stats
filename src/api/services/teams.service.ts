@@ -1,7 +1,49 @@
-// Récupère le calendrier de la saison
-export const getTeamSchedule = async (team: string): Promise<any> => {
+type BoxscoreTeam = {
+  abbrev?: string;
+  commonName?: {
+    default?: string;
+  };
+  sog?: number;
+  score?: number;
+  logo?: string;
+};
+
+type GameBoxscoreResponse = {
+  homeTeam: BoxscoreTeam;
+  awayTeam: BoxscoreTeam;
+};
+
+type TeamScheduleGame = {
+  id: number;
+  startTimeUTC: string;
+  gameState?: string;
+};
+
+type TeamScheduleResponse = {
+  games?: TeamScheduleGame[];
+  gamesByMonth?: Array<{
+    games?: TeamScheduleGame[];
+  }>;
+};
+
+type LastGamesWithDetailsOptions = {
+  maxGames?: number;
+  scheduleGames?: Array<{
+    id: number;
+    date: string;
+    gameState: string;
+  }>;
+};
+
+type TeamLastGameDetails = {
+  gameInfo: TeamScheduleGame;
+  boxscore: GameBoxscoreResponse;
+};
+
+// Récupère le calendrier de la saison en cours
+export const getTeamSchedule = async (team: string): Promise<TeamScheduleResponse> => {
   const res = await fetch(
-    `/api-nhl/v1/club-schedule-season/${team}/20252026`
+    `/api-nhl/v1/club-schedule-season/${team}/now`
   );
 
   if (!res.ok) {
@@ -11,8 +53,13 @@ export const getTeamSchedule = async (team: string): Promise<any> => {
   return res.json();
 };
 
+export function extractTeamScheduleGames(scheduleData: TeamScheduleResponse): TeamScheduleGame[] {
+  if (Array.isArray(scheduleData?.games)) return scheduleData.games;
+  return (scheduleData?.gamesByMonth ?? []).flatMap((month) => month.games ?? []);
+}
+
 // Récupère les détails d'un match (boxscore)
-export const getGameBoxscore = async (gameId: number): Promise<any> => {
+export const getGameBoxscore = async (gameId: number): Promise<GameBoxscoreResponse> => {
   const res = await fetch(`/api-nhl/v1/gamecenter/${gameId}/boxscore`);
 
   if (!res.ok) {
@@ -22,23 +69,34 @@ export const getGameBoxscore = async (gameId: number): Promise<any> => {
   return res.json();
 };
 
-// Récupère les 20 derniers matchs avec détails
-export const getTeamLastGamesWithDetails = async (team: string): Promise<any[]> => {
-  // 1. Récupérer le calendrier
-  const scheduleData = await getTeamSchedule(team);
+// Récupère les derniers matchs complétés avec détails (boxscore)
+export const getTeamLastGamesWithDetails = async (
+  team: string,
+  options: LastGamesWithDetailsOptions = {}
+): Promise<TeamLastGameDetails[]> => {
+  const maxGames = options.maxGames ?? 30;
+  const scheduleGamesFromOptions = options.scheduleGames?.map((game) => ({
+    id: game.id,
+    startTimeUTC: game.date,
+    gameState: game.gameState,
+  }));
+  const scheduleData = scheduleGamesFromOptions
+    ? { games: scheduleGamesFromOptions }
+    : await getTeamSchedule(team);
   
-  // 2. Filtrer et trier les matchs terminés
-  const games = scheduleData.games ?? scheduleData.gamesByMonth?.[0]?.games ?? [];
+  // 1. Filtrer et trier les matchs terminés
+  const games = extractTeamScheduleGames(scheduleData);
   const completedGames = games
-    .filter((game: any) => game.gameState === "OFF" || game.gameState === "FINAL")
+    .filter((game) => game.gameState === "OFF" || game.gameState === "FINAL")
     .sort(
-      (a: any, b: any) =>
+      (a, b) =>
         new Date(a.startTimeUTC).getTime() - new Date(b.startTimeUTC).getTime()
-    );
+    )
+    .slice(-maxGames);
 
-  // 3. Récupérer les détails de chaque match
+  // 2. Récupérer les détails de chaque match sélectionné
   const details = await Promise.all(
-    completedGames.map(async (game: any) => {
+    completedGames.map(async (game) => {
       try {
         const boxscore = await getGameBoxscore(game.id);
         return {
@@ -52,6 +110,8 @@ export const getTeamLastGamesWithDetails = async (team: string): Promise<any[]> 
     })
   );
 
-  // Filtrer les matchs dont on n'a pas pu récupérer les détails
-  return details.filter(Boolean);
+  // 3. Filtrer les matchs dont on n'a pas pu récupérer les détails
+  return details.filter(
+    (detail): detail is TeamLastGameDetails => detail !== null
+  );
 };

@@ -1,13 +1,38 @@
 import { useQuery } from "@tanstack/vue-query";
 import { getTeamLastGamesWithDetails } from "@/api/services/teams.service";
 import { teamLastGamesPresenter } from "../presenters/teams.presenter";
-import type { Ref } from 'vue';
+import type { TeamScheduleGame } from "../presenters/teams.presenter";
+import { computed, type Ref } from 'vue';
 
-export function useTeamLastGames(team: Ref<string>) {
+type UseTeamLastGamesOptions = {
+  maxGames?: number;
+  scheduleGames?: Ref<TeamScheduleGame[] | undefined>;
+};
+
+export function useTeamLastGames(
+  team: Ref<string>,
+  options: UseTeamLastGamesOptions = {}
+) {
+  const maxGames = options.maxGames ?? 30;
+
   return useQuery({
-    queryKey: ["teams", "lastGames", team],
+    queryKey: computed(() => ["teams", "lastGames", team.value, maxGames]),
+    enabled: computed(() => {
+      if (!team.value) return false;
+      if (!options.scheduleGames) return true;
+      return options.scheduleGames.value !== undefined;
+    }),
     queryFn: async () => {
-      const data = await getTeamLastGamesWithDetails(team.value);
+      const scheduleGames = options.scheduleGames?.value?.map((game) => ({
+        id: game.id,
+        date: game.date,
+        gameState: game.gameState,
+      }));
+
+      const data = await getTeamLastGamesWithDetails(team.value, {
+        maxGames,
+        scheduleGames,
+      });
       return teamLastGamesPresenter(data, team.value);
     },
     // Optionnel : cache plus long car les données ne changent pas souvent

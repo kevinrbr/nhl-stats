@@ -7,6 +7,11 @@ export function standingsPresenter(raw: any[]) {
     points: item.points,
     gamesPlayed: item.gamesPlayed,
     divisionName: item.divisionName,
+    conferenceName: item.conferenceName,
     teamAbbrev: item.teamAbbrev.default,
+    divisionSequence: item.divisionSequence,
+    wildcardSequence: item.wildcardSequence,
+    conferenceSequence: item.conferenceSequence,
+    leagueSequence: item.leagueSequence,
   }));
 }

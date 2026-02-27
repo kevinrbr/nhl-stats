@@ -46,6 +46,28 @@ const handleSort = (key: SortKey) => {
   }
 };
 
+// Vérifier si une équipe est en playoffs
+const isInPlayoffs = (team: any): boolean => {
+  // Top 3 de la division
+  if (team.divisionSequence <= 3) return true;
+  
+  // Ou Wildcard 1 ou 2
+  if (team.wildcardSequence > 0 && team.wildcardSequence <= 2) return true;
+  
+  return false;
+};
+
+// Obtenir le badge de position playoff
+const getPlayoffBadge = (team: any): string | null => {
+  if (team.divisionSequence <= 3) {
+    return `${team.divisionSequence}`;
+  }
+  if (team.wildcardSequence > 0 && team.wildcardSequence <= 2) {
+    return `WC${team.wildcardSequence}`;
+  }
+  return null;
+};
+
 const filteredTeams = computed(() => {
   if (!rankings.value) return [];
 
@@ -105,34 +127,45 @@ const sortedTeams = computed(() => {
   <div>
     <h2 class="text-5xl font-bold mb-6">Standings</h2>
 
-    <Select v-model="selectedDivision">
-      <SelectTrigger class="w-[280px]">
-        <SelectValue placeholder="Toutes les divisions" />
-      </SelectTrigger>
+    <div class="flex items-center gap-4 mb-6">
+      <Select v-model="selectedDivision">
+        <SelectTrigger class="w-[280px]">
+          <SelectValue placeholder="Toutes les divisions" />
+        </SelectTrigger>
 
-      <SelectContent>
-        <SelectGroup>
-          <SelectItem value="toutes">Toutes les divisions</SelectItem>
-        </SelectGroup>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="toutes">Toutes les divisions</SelectItem>
+          </SelectGroup>
 
-        <SelectGroup>
-          <SelectLabel>Conférence Est</SelectLabel>
-          <SelectItem value="atlantique">Division Atlantique</SelectItem>
-          <SelectItem value="metropolitaine">Division Métropolitaine</SelectItem>
-        </SelectGroup>
+          <SelectGroup>
+            <SelectLabel>Conférence Est</SelectLabel>
+            <SelectItem value="atlantique">Division Atlantique</SelectItem>
+            <SelectItem value="metropolitaine">Division Métropolitaine</SelectItem>
+          </SelectGroup>
 
-        <SelectGroup>
-          <SelectLabel>Conférence Ouest</SelectLabel>
-          <SelectItem value="centrale">Division Centrale</SelectItem>
-          <SelectItem value="pacifique">Division Pacifique</SelectItem>
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+          <SelectGroup>
+            <SelectLabel>Conférence Ouest</SelectLabel>
+            <SelectItem value="centrale">Division Centrale</SelectItem>
+            <SelectItem value="pacifique">Division Pacifique</SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+
+      <!-- Légende -->
+      <div class="flex items-center gap-4 text-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-blue-600/20 border border-blue-600/40 rounded"></div>
+          <span class="text-gray-400">Playoff Position</span>
+        </div>
+      </div>
+    </div>
 
     <!-- Table -->
     <Table class="mt-6">
       <TableHeader>
         <TableRow>
+          <TableHead class="w-12">#</TableHead>
           <TableHead
             class="cursor-pointer select-none"
             @click="handleSort('teamName')"
@@ -189,7 +222,23 @@ const sortedTeams = computed(() => {
         <TableRow
           v-for="(team, i) in sortedTeams"
           :key="i"
+          :class="{
+            'bg-blue-600/10 hover:bg-blue-600/20': isInPlayoffs(team),
+          }"
         >
+          <!-- Position Badge -->
+          <TableCell class="text-center">
+            <span 
+              v-if="getPlayoffBadge(team)"
+              class="inline-flex items-center justify-center w-8 h-8 text-xs font-bold rounded bg-blue-600 text-white"
+            >
+              {{ getPlayoffBadge(team) }}
+            </span>
+            <span v-else class="text-gray-500 text-sm">
+              {{ i + 1 }}
+            </span>
+          </TableCell>
+
           <TableCell class="flex items-center gap-2">
             <img
               :src="team.logo"
@@ -199,7 +248,7 @@ const sortedTeams = computed(() => {
             <span>{{ team.teamName.default }}</span>
           </TableCell>
 
-          <TableCell class="text-center">{{ team.points }}</TableCell>
+          <TableCell class="text-center font-semibold">{{ team.points }}</TableCell>
           <TableCell class="text-center">{{ team.gamesPlayed }}</TableCell>
           <TableCell class="text-center">{{ team.wins }}</TableCell>
           <TableCell class="text-center">{{ team.losses }}</TableCell>

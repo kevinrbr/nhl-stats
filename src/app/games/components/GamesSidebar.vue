@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { UpcomingGame } from '../presenters/games.presenter';
 import { useGamesSchedule } from '../queries/useGamesSchedule';
 import GameCard from './GameCard.vue';
 
 const emit = defineEmits<{
-  (e: 'select-game', gameId: number): void;
+  (e: 'select-game', gameId: UpcomingGame): void;
 }>();
 
 const { data: gamesByDate, isLoading } = useGamesSchedule();

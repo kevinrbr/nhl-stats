@@ -1,19 +1,36 @@
 <script lang="ts" setup>
 import { computed, ref, toRefs } from 'vue';
-import { useTeamLastGames } from '../queries/useTeamLastGames';
+import { useTeamOverview } from '../composables/useTeamOverview';
+import type { TeamGameDetails } from '../presenters/teams.presenter';
 import Select from '@/components/ui/select/Select.vue';
 import SelectContent from '@/components/ui/select/SelectContent.vue';
 import SelectGroup from '@/components/ui/select/SelectGroup.vue';
 import SelectItem from '@/components/ui/select/SelectItem.vue';
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue';
 import SelectValue from '@/components/ui/select/SelectValue.vue';
+import TeamRecentGames from './TeamRecentGames.vue';
+import TeamPlayoffStatus from './TeamPlayoffStatus.vue';
+import TeamRoadtripStatus from './TeamRoadtripStatus.vue';
 
 const props = defineProps<{
   team: string;
 }>();
 
 const { team } = toRefs(props);
-const { data: teamLastGames, isLoading } = useTeamLastGames(team);
+const {
+  teamMeta,
+  teamStanding,
+  playoffStatus,
+  teamLastGames,
+  travelStatus,
+  isLastGamesLoading,
+  isScheduleLoading,
+} = useTeamOverview(team);
+
+const isLoading = isLastGamesLoading;
+
+const selectedTeamName = computed(() => teamMeta.value?.name ?? team.value);
+const selectedTeamLogo = computed(() => teamMeta.value?.logo ?? '');
 
 const selectedPeriod = ref('season');
 const selectedStat = ref('goals-for');
@@ -65,7 +82,7 @@ const filteredGames = computed(() => {
   return games.reverse();
 });
 
-const getStatValue = (game: any): number => {
+const getStatValue = (game: TeamGameDetails): number => {
   const teamScore = game.isHome ? game.homeTeam.score : game.awayTeam.score;
   const opponentScore = game.isHome ? game.awayTeam.score : game.homeTeam.score;
   const teamSog = game.isHome ? game.homeTeam.sog : game.awayTeam.sog;
@@ -87,7 +104,7 @@ const getStatValue = (game: any): number => {
   }
 };
 
-const getOpponentLabel = (game: any): string => {
+const getOpponentLabel = (game: TeamGameDetails): string => {
   const opponent = game.isHome ? game.awayTeam.abbrev : game.homeTeam.abbrev;
   return game.isHome ? opponent : `@${opponent}`;
 };
@@ -201,8 +218,19 @@ const chartSeries = computed(() => [{
     <div v-if="isLoading" class="text-white text-center py-8">
       Loading...
     </div>
-    
     <template v-else>
+      <div class="flex items-center gap-3 mb-8">
+        <img
+          v-if="selectedTeamLogo"
+          :src="selectedTeamLogo"
+          :alt="selectedTeamName"
+          class="w-11 h-11 object-contain"
+        />
+        <h1 class="text-white text-2xl font-bold leading-none">
+          {{ selectedTeamName }}
+        </h1>
+      </div>
+
       <!-- Filters -->
       <div class="flex gap-3 mb-6">
         <Select v-model="selectedPeriod">
@@ -268,7 +296,7 @@ const chartSeries = computed(() => [{
       </div>
 
       <!-- Chart -->
-      <div class="rounded-lg p-4">
+      <div class="rounded-lg p-4 mb-6">
         <apexchart 
           v-if="filteredGames.length > 0" 
           width="100%" 
@@ -280,6 +308,26 @@ const chartSeries = computed(() => [{
         />
         <div v-else class="text-gray-400 text-center py-8">
           Aucune donnée disponible
+        </div>
+      </div>
+      <div class="flex gap-6 items-start">
+        <div class="flex-1">
+          <TeamRecentGames
+            :games="teamLastGames"
+            :is-loading="isLastGamesLoading"
+            :limit="10"
+          />
+        </div>
+        <div class="flex-1">
+          <TeamPlayoffStatus
+            :team-standing="teamStanding"
+            :playoff-status="playoffStatus"
+          />
+          <TeamRoadtripStatus
+            class="mt-6"
+            :travel-status="travelStatus"
+            :is-loading="isScheduleLoading"
+          />
         </div>
       </div>
     </template>

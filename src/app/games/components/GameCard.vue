@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import type { UpcomingGame } from '../presenters/games.presenter';
+import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
 
 defineProps<{
   game: UpcomingGame;
 }>();
 
+
+
 const emit = defineEmits<{
-  (e: 'select', gameId: number): void;
+  (e: 'select', game: UpcomingGame): void;
 }>();
 </script>
 
 <template>
   <button
-    @click="emit('select', game.id)"
+    @click="emit('select', game)"
     class="w-full hover:bg-gray-700 rounded-lg p-4 transition-colors border border-gray-700"
   >
     <div class="flex items-center justify-between gap-4">

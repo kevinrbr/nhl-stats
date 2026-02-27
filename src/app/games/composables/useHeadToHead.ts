@@ -1,8 +1,8 @@
 import { computed, type Ref } from 'vue';
-import type { TeamGameDetails } from '../presenters/teams.presenter';
+import type { TeamScheduleGame } from '@/app/teams/presenters/teams.presenter';
 
 export function useHeadToHead(
-  games: Ref<TeamGameDetails[] | undefined>,
+  games: Ref<TeamScheduleGame[] | undefined>,
   opponentTeam: Ref<string | null>
 ) {
   const headToHeadGames = computed(() => {
