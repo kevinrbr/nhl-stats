@@ -1,16 +1,20 @@
 <script lang="ts" setup>
 import { computed, ref, toRefs } from 'vue';
-import { useTeamOverview } from '../composables/useTeamOverview';
-import type { TeamGameDetails } from '../presenters/teams.presenter';
+import { Activity, House } from 'lucide-vue-next';
+import { useTeamInsightCards } from '@/app/teams/composables/useTeamInsightCards';
+import { useTeamInsights } from '@/app/teams/composables/useTeamInsights';
+import { useTeamOverview } from '@/app/teams/composables/useTeamOverview';
+import type { TeamGameDetails } from '@/app/teams/presenters/teams.presenter';
 import Select from '@/components/ui/select/Select.vue';
 import SelectContent from '@/components/ui/select/SelectContent.vue';
 import SelectGroup from '@/components/ui/select/SelectGroup.vue';
 import SelectItem from '@/components/ui/select/SelectItem.vue';
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue';
 import SelectValue from '@/components/ui/select/SelectValue.vue';
-import TeamRecentGames from './TeamRecentGames.vue';
-import TeamPlayoffStatus from './TeamPlayoffStatus.vue';
-import TeamRoadtripStatus from './TeamRoadtripStatus.vue';
+import TeamInsightCard from '@/app/teams/components/TeamInsightCard.vue';
+import TeamPlayoffStatus from '@/app/teams/components/TeamPlayoffStatus.vue';
+import TeamRecentGames from '@/app/teams/components/TeamRecentGames.vue';
+import TeamRoadtripStatus from '@/app/teams/components/TeamRoadtripStatus.vue';
 
 const props = defineProps<{
   team: string;
@@ -26,6 +30,11 @@ const {
   isLastGamesLoading,
   isScheduleLoading,
 } = useTeamOverview(team);
+const { recentForm, homeAwaySplit } = useTeamInsights(teamLastGames);
+const { recentFormCard, homeAwayCard } = useTeamInsightCards(
+  recentForm,
+  homeAwaySplit
+);
 
 const isLoading = isLastGamesLoading;
 
@@ -310,6 +319,26 @@ const chartSeries = computed(() => [{
           Aucune donnée disponible
         </div>
       </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+        <TeamInsightCard
+          :title="recentFormCard.title"
+          :subtitle="recentFormCard.subtitle"
+          :metrics="recentFormCard.metrics"
+          :variant="recentFormCard.variant"
+          :icon="Activity"
+          :is-loading="isLastGamesLoading"
+        />
+        <TeamInsightCard
+          :title="homeAwayCard.title"
+          :subtitle="homeAwayCard.subtitle"
+          :metrics="homeAwayCard.metrics"
+          :variant="homeAwayCard.variant"
+          :icon="House"
+          :is-loading="isLastGamesLoading"
+        />
+      </div>
+
       <div class="flex gap-6 items-start">
         <div class="flex-1">
           <TeamRecentGames
