@@ -10,24 +10,36 @@ export type TeamTravelScenario =
   | 'home-to-away'
   | 'away-to-away';
 
+export interface TeamTravelFatigueBreakdown {
+  awayPressure: number;
+  distancePressure: number;
+  restPenalty: number;
+  transitionPenalty: number;
+}
+
 export interface TeamTravelStatus {
   scenario: TeamTravelScenario;
   lastGame: TeamScheduleGame;
   nextGame: TeamScheduleGame;
+  daysUntilNextGame: number;
   restDays: number;
-  travelDistanceKm: number;
   awayStreakGames: number;
-  awayStreakDays: number;
-  headline: string;
-  detail: string;
+  awayStreakWindowDays: number;
+  awayTripElapsedDays: number;
+  awayTripWindowDays: number;
+  nextTripWindowDays: number;
+  nextDestinationCity: string | null;
+  nextLegDistanceKm: number;
+  totalTripDistanceKm: number;
   fatigueScore: number;
-  fatigueLabel: string;
-  fatigueTextClass: string;
-  fatigueBarClass: string;
+  fatigueBreakdown: TeamTravelFatigueBreakdown;
 }
 
-function pluralizeDays(days: number): string {
-  return `${days} jour${days > 1 ? 's' : ''}`;
+interface FatigueInput {
+  scenario: TeamTravelScenario;
+  awayStreakGames: number;
+  totalTripDistanceKm: number;
+  restDays: number;
 }
 
 function getCityLabel(teamAbbrev: string): string {
@@ -134,39 +146,41 @@ function getNextAwayTrip(
   return trip;
 }
 
-function getFatigueUi(score: number): {
-  label: string;
-  textClass: string;
-  barClass: string;
-} {
-  if (score <= 3) {
-    return {
-      label: 'Faible',
-      textClass: 'text-green-400',
-      barClass: 'bg-green-500',
-    };
-  }
+function computeFatigueScore({
+  scenario,
+  awayStreakGames,
+  totalTripDistanceKm,
+  restDays,
+}: FatigueInput): { score: number; breakdown: TeamTravelFatigueBreakdown } {
+  const awayPressure = awayStreakGames * 1.2;
+  const distancePressure = Math.min(3.5, totalTripDistanceKm / 1200);
+  const restPenalty =
+    restDays === 0 ? 2.5 : restDays === 1 ? 1.6 : restDays === 2 ? 0.8 : 0;
+  const transitionPenalty =
+    scenario === 'away-to-away'
+      ? 1.5
+      : scenario === 'away-to-home'
+        ? 0.8
+        : scenario === 'home-to-away'
+          ? 1.1
+          : 0.2;
 
-  if (score <= 6) {
-    return {
-      label: 'Moderee',
-      textClass: 'text-yellow-400',
-      barClass: 'bg-yellow-500',
-    };
-  }
-
-  if (score <= 8) {
-    return {
-      label: 'Elevee',
-      textClass: 'text-orange-400',
-      barClass: 'bg-orange-500',
-    };
-  }
+  const score = Math.min(
+    10,
+    Math.max(
+      1,
+      Math.round(1 + awayPressure + distancePressure + restPenalty + transitionPenalty)
+    )
+  );
 
   return {
-    label: 'Tres elevee',
-    textClass: 'text-red-400',
-    barClass: 'bg-red-500',
+    score,
+    breakdown: {
+      awayPressure,
+      distancePressure,
+      restPenalty,
+      transitionPenalty,
+    },
   };
 }
 
@@ -198,135 +212,104 @@ export function useTeamRoadTrip(
 
     if (!nextGame) return null;
 
-    const restDays = Math.max(
-      0,
-      diffInCalendarDays(lastGame.date, nextGame.date) - 1
-    );
-    const daysUntilNextGame = diffInLocalCalendarDays(new Date(), new Date(nextGame.date));
+    const now = new Date();
+    const restDays = Math.max(0, diffInCalendarDays(lastGame.date, nextGame.date) - 1);
+    const daysUntilNextGame = diffInLocalCalendarDays(now, new Date(nextGame.date));
 
     const awayStreak = lastGame.isHome ? [] : getAwayStreak(completedGames);
     const awayStreakGames = awayStreak.length;
     const firstAwayGame = awayStreak[0];
     const lastAwayGame = awayStreak[awayStreak.length - 1];
-    const awayStreakDays =
+
+    const awayStreakWindowDays =
       awayStreakGames > 0 && firstAwayGame && lastAwayGame
         ? diffInCalendarDays(firstAwayGame.date, lastAwayGame.date) + 1
+        : 0;
+
+    const awayTripElapsedDays =
+      awayStreakGames > 0 && firstAwayGame
+        ? diffInLocalCalendarDays(new Date(firstAwayGame.date), now) + 1
+        : 0;
+
+    const awayTripWindowDays =
+      awayStreakGames > 0 && firstAwayGame
+        ? diffInCalendarDays(firstAwayGame.date, nextGame.date) + 1
         : 0;
 
     const lastWasHome = lastGame.isHome;
     const nextIsHome = nextGame.isHome;
 
     let scenario: TeamTravelScenario = 'home-to-home';
-    let travelDistanceKm = 0;
-    let headline = '';
-    let detail = '';
+    let totalTripDistanceKm = 0;
+    let nextLegDistanceKm = 0;
+    let nextTripWindowDays = 0;
+    let nextDestinationCity: string | null = null;
 
     if (lastWasHome && nextIsHome) {
       scenario = 'home-to-home';
-      headline = `${pluralizeDays(restDays)} de repos`;
-      detail =
-        'Dernier match a domicile et prochain match a domicile. Fatigue limitee.';
     } else if (!lastWasHome && nextIsHome) {
       scenario = 'away-to-home';
-      travelDistanceKm = getAwayStreakDistance(
-        awayStreak,
-        teamAbbrev.value,
-        true
-      );
-      headline = `${pluralizeDays(restDays)} avant le retour a domicile`;
-      detail = `${awayStreakGames} matchs a l'exterieur sur ${pluralizeDays(awayStreakDays)}.`;
+      totalTripDistanceKm = getAwayStreakDistance(awayStreak, teamAbbrev.value, true);
+      nextLegDistanceKm = distanceBetweenTeams(lastGame.homeTeam.abbrev, teamAbbrev.value);
+      nextDestinationCity = getCityLabel(teamAbbrev.value);
     } else if (lastWasHome && !nextIsHome) {
       scenario = 'home-to-away';
       const nextGameIndex = sortedGames.findIndex((game) => game.id === nextGame.id);
       const upcomingAwayTrip = getNextAwayTrip(sortedGames, nextGameIndex);
       const firstTripGame = upcomingAwayTrip[0] ?? nextGame;
-      const lastTripGame =
-        upcomingAwayTrip[upcomingAwayTrip.length - 1] ?? nextGame;
+      const lastTripGame = upcomingAwayTrip[upcomingAwayTrip.length - 1] ?? nextGame;
 
-      travelDistanceKm += distanceBetweenTeams(
-        teamAbbrev.value,
-        firstTripGame.homeTeam.abbrev
-      );
+      totalTripDistanceKm += distanceBetweenTeams(teamAbbrev.value, firstTripGame.homeTeam.abbrev);
+      nextLegDistanceKm = distanceBetweenTeams(teamAbbrev.value, firstTripGame.homeTeam.abbrev);
+      nextDestinationCity = getCityLabel(firstTripGame.homeTeam.abbrev);
 
       for (let i = 1; i < upcomingAwayTrip.length; i += 1) {
         const previousAway = upcomingAwayTrip[i - 1];
         const currentAway = upcomingAwayTrip[i];
         if (!previousAway || !currentAway) continue;
 
-        travelDistanceKm += distanceBetweenTeams(
+        totalTripDistanceKm += distanceBetweenTeams(
           previousAway.homeTeam.abbrev,
           currentAway.homeTeam.abbrev
         );
       }
 
-      const tripDuration = Math.max(
+      nextTripWindowDays = Math.max(
         1,
         diffInCalendarDays(firstTripGame.date, lastTripGame.date) + 1
       );
-
-      headline =
-        daysUntilNextGame === 0
-          ? "Depart aujourd'hui"
-          : `${pluralizeDays(daysUntilNextGame)} avant le depart`;
-      detail = `Prochain deplacement vers ${getCityLabel(firstTripGame.homeTeam.abbrev)}: ${upcomingAwayTrip.length || 1} match(s) a l'exterieur sur ${pluralizeDays(tripDuration)}.`;
     } else {
       scenario = 'away-to-away';
-      const traveledDistance = getAwayStreakDistance(
-        awayStreak,
-        teamAbbrev.value,
-        false
-      );
-      const nextLegDistance = distanceBetweenTeams(
-        lastGame.homeTeam.abbrev,
-        nextGame.homeTeam.abbrev
-      );
-      const extendedTripDays =
-        awayStreakGames > 0 && firstAwayGame
-          ? diffInCalendarDays(firstAwayGame.date, nextGame.date) + 1
-          : 0;
+      const traveledDistance = getAwayStreakDistance(awayStreak, teamAbbrev.value, false);
+      nextLegDistanceKm = distanceBetweenTeams(lastGame.homeTeam.abbrev, nextGame.homeTeam.abbrev);
 
-      travelDistanceKm = traveledDistance + nextLegDistance;
-      headline = 'Road trip en cours';
-      detail = `${awayStreakGames} matchs a l'exterieur enchaine(s), ${pluralizeDays(extendedTripDays)} de voyage avec le prochain match.`;
+      totalTripDistanceKm = traveledDistance + nextLegDistanceKm;
+      nextDestinationCity = getCityLabel(nextGame.homeTeam.abbrev);
     }
 
-    const awayPressure = awayStreakGames * 1.2;
-    const travelPressure = Math.min(3.5, travelDistanceKm / 1200);
-    const restPenalty =
-      restDays === 0 ? 2.5 : restDays === 1 ? 1.6 : restDays === 2 ? 0.8 : 0;
-    const transitionPenalty =
-      scenario === 'away-to-away'
-        ? 1.5
-        : scenario === 'away-to-home'
-          ? 0.8
-          : scenario === 'home-to-away'
-            ? 1.1
-            : 0.2;
-
-    const fatigueScore = Math.min(
-      10,
-      Math.max(
-        1,
-        Math.round(1 + awayPressure + travelPressure + restPenalty + transitionPenalty)
-      )
-    );
-
-    const fatigueUi = getFatigueUi(fatigueScore);
+    const { score: fatigueScore, breakdown: fatigueBreakdown } = computeFatigueScore({
+      scenario,
+      awayStreakGames,
+      totalTripDistanceKm,
+      restDays,
+    });
 
     return {
       scenario,
       lastGame,
       nextGame,
+      daysUntilNextGame,
       restDays,
-      travelDistanceKm,
       awayStreakGames,
-      awayStreakDays,
-      headline,
-      detail,
+      awayStreakWindowDays,
+      awayTripElapsedDays,
+      awayTripWindowDays,
+      nextTripWindowDays,
+      nextDestinationCity,
+      nextLegDistanceKm,
+      totalTripDistanceKm,
       fatigueScore,
-      fatigueLabel: fatigueUi.label,
-      fatigueTextClass: fatigueUi.textClass,
-      fatigueBarClass: fatigueUi.barClass,
+      fatigueBreakdown,
     };
   });
 

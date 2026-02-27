@@ -12,7 +12,9 @@ const handleSelectTeam = (teamAbbrev: string) => {
 
 <template>
   <section class="flex">
-    <aside class="w-[250px] pr-4">
+    <aside
+      class="w-[250px] pr-4 sticky self-start top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain"
+    >
       <TeamsSidebar @select-team="handleSelectTeam" />
     </aside>
 
