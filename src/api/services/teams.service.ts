@@ -61,7 +61,7 @@ export function extractTeamScheduleGames(scheduleData: TeamScheduleResponse): Te
 // Récupère les détails d'un match (boxscore)
 export const getGameBoxscore = async (gameId: number): Promise<GameBoxscoreResponse> => {
   const res = await fetch(`/api-nhl/v1/gamecenter/${gameId}/boxscore`);
-
+  console.log('rest', res);
   if (!res.ok) {
     throw new Error(`Erreur fetching game ${gameId} boxscore`);
   }

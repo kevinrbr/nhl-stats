@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, toRefs } from 'vue';
 import { usePlayerLogs } from '@/app/players/queries/usePlayerLogs';
+import type { Player } from '@/app/players/types/player';
 import Select from '@/components/ui/select/Select.vue';
 import SelectContent from '@/components/ui/select/SelectContent.vue';
 import SelectGroup from '@/components/ui/select/SelectGroup.vue';
@@ -8,12 +9,25 @@ import SelectItem from '@/components/ui/select/SelectItem.vue';
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue';
 import SelectValue from '@/components/ui/select/SelectValue.vue';
 
+type PlayerGameLog = {
+  homeRoadFlag: string;
+  goals: number;
+  assists: number;
+  points: number;
+  shots: number;
+  opponentAbbrev: string;
+};
+
 const props = defineProps<{
-  selectedPlayerId: string
+  selectedPlayerId: string;
+  selectedPlayer: Player | null;
 }>();
 
 const { selectedPlayerId } = toRefs(props);
 const { data: playerLogs } = usePlayerLogs(selectedPlayerId);
+const selectedPlayerLabel = computed(() =>
+  props.selectedPlayer ? `${props.selectedPlayer.name} #${props.selectedPlayer.number}` : `Player #${props.selectedPlayerId}`
+);
 
 // Select states
 const selectedPeriod = ref('season');
@@ -44,7 +58,7 @@ const FILTER_OPTIONS = [
 const filteredLogs = computed(() => {
   if (!playerLogs.value) return [];
   
-  let logs = [...playerLogs.value];
+  let logs = [...playerLogs.value] as PlayerGameLog[];
   
   // Apply home/away filter
   if (selectedFilter.value === 'home') {
@@ -63,7 +77,7 @@ const filteredLogs = computed(() => {
   return logs;
 });
 
-const getStatValue = (log: any): number => {
+const getStatValue = (log: PlayerGameLog): number => {
   const statMap: Record<string, number> = {
     goals: log.goals,
     assists: log.assists,
@@ -157,6 +171,18 @@ const chartSeries = computed(() => [{
 
 <template>
   <div class="w-full p-6">
+    <div class="flex items-center gap-3 mb-8">
+      <img
+        v-if="props.selectedPlayer?.headshot"
+        :src="props.selectedPlayer.headshot"
+        :alt="selectedPlayerLabel"
+        class="w-12 h-12 rounded-full object-cover"
+      />
+      <h1 class="text-white text-2xl font-bold leading-none">
+        {{ selectedPlayerLabel }}
+      </h1>
+    </div>
+
     <!-- Filters -->
     <div class="flex gap-3 mb-6">
       <Select v-model="selectedPeriod">
@@ -222,7 +248,7 @@ const chartSeries = computed(() => [{
     </div>
 
     <!-- Chart -->
-    <div class="rounded-lg p-4">
+    <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4">
       <apexchart 
         v-if="filteredLogs.length > 0" 
         width="100%" 

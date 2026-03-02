@@ -2,12 +2,19 @@
 import { useStandingsQuery } from '@/app/standings/queries/useStandingsQuery';
 import TeamSelect from '@/app/teams/components/TeamSelect.vue';
 import { useTeamRoster } from '@/app/teams/queries/useTeamRoster';
-import { computed, ref } from 'vue';
-import PlayersList from './PlayersList.vue';
-import type { PlayersByPosition } from '../types/player';
+import { computed, ref, watch } from 'vue';
+import PlayersList from '@/app/players/components/PlayersList.vue';
+import type { PlayersByPosition } from '@/app/players/types/player';
+import type { Player } from '@/app/players/types/player';
+
+const props = withDefaults(defineProps<{
+  selectedPlayerId?: string;
+}>(), {
+  selectedPlayerId: '',
+});
 
 const emit = defineEmits<{
-  (e: 'select-player', playerId: number): void
+  (e: 'select-player', player: Player): void
 }>()
 
 const selectedTeam = ref('COL');
@@ -49,6 +56,22 @@ const playersByPosition = computed<PlayersByPosition>(() => {
     })),
   };
 });
+
+const playersList = computed<Player[]>(() => [
+  ...playersByPosition.value.forwards,
+  ...playersByPosition.value.defensemen,
+  ...playersByPosition.value.goalies,
+]);
+
+watch([playersList, () => props.selectedPlayerId], ([players, selectedId]) => {
+  if (!players.length) return;
+
+  const selectedPlayer =
+    players.find((player) => player.id.toString() === selectedId) ?? players[0];
+
+  if (!selectedPlayer) return;
+  emit('select-player', selectedPlayer);
+}, { immediate: true });
 </script>
 
 <template>
@@ -59,7 +82,8 @@ const playersByPosition = computed<PlayersByPosition>(() => {
     />
     <PlayersList 
       v-if="rosters" 
-      :players="playersByPosition" 
+      :players="playersByPosition"
+      :selected-player-id="props.selectedPlayerId"
       @select="emit('select-player', $event)"
     />
 </template>
