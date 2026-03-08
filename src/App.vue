@@ -3,41 +3,45 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <header class="w-full fixed top-0 left-0 z-50 px-8 py-4 bg-transparent">
-    <nav class="flex gap-6 items-center text-white">
-      <RouterLink 
-        to="/" 
-        class="no-underline text-white hover:opacity-80"
-        active-class="font-semibold"
-      >
-        Accueil
-      </RouterLink>
+  <header class="app-topbar">
+    <div class="app-topbar-inner">
+      <nav class="app-nav">
+        <RouterLink
+          to="/"
+          class="app-nav-link"
+          exact-active-class="app-nav-link-active"
+        >
+          Accueil
+        </RouterLink>
 
-      <RouterLink 
-        to="/teams" 
-        class="no-underline text-white hover:opacity-80"
-        active-class="font-semibold"
-      >
-        Equipes
-      </RouterLink>
+        <RouterLink
+          to="/teams"
+          class="app-nav-link"
+          exact-active-class="app-nav-link-active"
+        >
+          Equipes
+        </RouterLink>
 
-      <RouterLink 
-        to="/players" 
-        class="no-underline text-white hover:opacity-80"
-        active-class="font-semibold"
-      >
-        Players
-      </RouterLink>
+        <RouterLink
+          to="/players"
+          class="app-nav-link"
+          exact-active-class="app-nav-link-active"
+        >
+          Players
+        </RouterLink>
 
-      <RouterLink 
-        to="/games" 
-        class="no-underline text-white hover:opacity-80"
-        active-class="font-semibold"
-      >
-        Games
-      </RouterLink>
-    </nav>
+        <RouterLink
+          to="/games"
+          class="app-nav-link"
+          exact-active-class="app-nav-link-active"
+        >
+          Games
+        </RouterLink>
+      </nav>
+    </div>
   </header>
 
-  <RouterView />
+  <main class="app-main">
+    <RouterView />
+  </main>
 </template>

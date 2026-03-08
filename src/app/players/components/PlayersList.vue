@@ -21,18 +21,17 @@ const playersList = computed<Player[]>(() => [
 
 <template>
   <div>
-    <ul class="mt-8">
+    <ul class="mt-3 space-y-1">
       <li
         v-for="player in playersList"
         :key="player.id"
-        class="mb-1"
       >
         <button
           type="button"
           class="w-full flex items-center gap-4 p-2 rounded-lg text-left transition-colors"
           :class="{
-            'bg-gray-800': props.selectedPlayerId === player.id.toString(),
-            'hover:bg-gray-800/70': props.selectedPlayerId !== player.id.toString(),
+            'bg-zinc-800/90': props.selectedPlayerId === player.id.toString(),
+            'hover:bg-zinc-800/70': props.selectedPlayerId !== player.id.toString(),
           }"
           @click="emit('select', player)"
         >
@@ -41,7 +40,7 @@ const playersList = computed<Player[]>(() => [
             :alt="player.name"
             class="w-10 h-10 rounded-full object-cover"
           />
-          <span class="font-medium text-white truncate">
+          <span class="font-medium text-zinc-100 truncate">
               {{ player.name }} #{{ player.number }}
           </span>
         </button>
@@ -49,4 +48,3 @@ const playersList = computed<Player[]>(() => [
     </ul>
   </div>
 </template>
-

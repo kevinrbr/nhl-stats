@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, toRefs } from 'vue';
 import { usePlayerLogs } from '@/app/players/queries/usePlayerLogs';
+import PlayerShootingZonesPanel from '@/app/players/components/shooting-zones/PlayerShootingZonesPanel.vue';
 import type { Player } from '@/app/players/types/player';
 import Select from '@/components/ui/select/Select.vue';
 import SelectContent from '@/components/ui/select/SelectContent.vue';
@@ -170,7 +171,7 @@ const chartSeries = computed(() => [{
 </script>
 
 <template>
-  <div class="w-full p-6">
+  <div class="w-full">
     <div class="flex items-center gap-3 mb-8">
       <img
         v-if="props.selectedPlayer?.headshot"
@@ -178,7 +179,7 @@ const chartSeries = computed(() => [{
         :alt="selectedPlayerLabel"
         class="w-12 h-12 rounded-full object-cover"
       />
-      <h1 class="text-white text-2xl font-bold leading-none">
+      <h1 class="text-zinc-100 text-2xl font-bold leading-none">
         {{ selectedPlayerLabel }}
       </h1>
     </div>
@@ -239,28 +240,32 @@ const chartSeries = computed(() => [{
 
     <!-- Chart header -->
     <div class="mb-4">
-      <h3 class="text-white text-sm font-medium">
+      <h3 class="text-zinc-100 text-sm font-medium">
         {{ statLabel }} - {{ periodLabel }}
       </h3>
-      <p class="text-gray-500 text-xs mt-1">
+      <p class="text-zinc-500 text-xs mt-1">
         Last {{ filteredLogs.length }} games
       </p>
     </div>
 
-    <!-- Chart -->
-    <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4">
-      <apexchart 
-        v-if="filteredLogs.length > 0" 
-        width="100%" 
-        height="400"
-        type="bar" 
-        :options="chartOptions" 
-        :series="chartSeries"
-        :key="`${selectedPeriod}-${selectedStat}-${selectedFilter}`"
-      />
-      <div v-else class="text-gray-400 text-center py-8">
-        Aucune donnée disponible
+    <div class="space-y-6">
+      <!-- Chart -->
+      <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4">
+        <apexchart 
+          v-if="filteredLogs.length > 0" 
+          width="100%" 
+          height="400"
+          type="bar" 
+          :options="chartOptions" 
+          :series="chartSeries"
+          :key="`${selectedPeriod}-${selectedStat}-${selectedFilter}`"
+        />
+        <div v-else class="text-zinc-400 text-center py-8">
+          Aucune donnée disponible
+        </div>
       </div>
+
+      <PlayerShootingZonesPanel :player-id="selectedPlayerId" />
     </div>
   </div>
 </template>

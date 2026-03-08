@@ -252,7 +252,7 @@ const handleSelectTeam = (teamAbbrev: string) => {
 </script>
 
 <template>
-  <div class="w-full px-6 pb-6 pt-2">
+  <div class="w-full pb-4">
     <div v-if="isLoading" class="text-zinc-300 text-center py-8">
       Loading...
     </div>

@@ -27,8 +27,8 @@ const handleTeamClick = (teamAbbrev: string) => {
 </script>
 
 <template>
-  <div>
-    <h3 class="text-white font-semibold mb-4">Teams</h3>
+  <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/65 p-3">
+    <h3 class="text-zinc-100 text-sm font-semibold mb-3 px-2">Teams</h3>
     
     <ul class="space-y-1">
       <li
@@ -37,15 +37,15 @@ const handleTeamClick = (teamAbbrev: string) => {
       >
         <button
           @click="handleTeamClick(team.teamAbbrev)"
-          class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800 transition-colors text-left"
-          :class="{ 'bg-gray-800': props.selectedTeam === team.teamAbbrev }"
+          class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/70 transition-colors text-left"
+          :class="{ 'bg-zinc-800/90': props.selectedTeam === team.teamAbbrev }"
         >
           <img 
             :src="team.logo" 
             :alt="team.teamName.default"
             class="w-8 h-8 object-contain"
           />
-          <span class="text-white text-sm">
+          <span class="text-zinc-100 text-sm truncate">
             {{ team.teamName.default }}
           </span>
         </button>

@@ -1,3 +1,5 @@
+import { fetchGameCenterBoxscore } from '@/api/services/gamecenter.service';
+
 type BoxscoreTeam = {
   abbrev?: string;
   commonName?: {
@@ -58,17 +60,6 @@ export function extractTeamScheduleGames(scheduleData: TeamScheduleResponse): Te
   return (scheduleData?.gamesByMonth ?? []).flatMap((month) => month.games ?? []);
 }
 
-// Récupère les détails d'un match (boxscore)
-export const getGameBoxscore = async (gameId: number): Promise<GameBoxscoreResponse> => {
-  const res = await fetch(`/api-nhl/v1/gamecenter/${gameId}/boxscore`);
-  console.log('rest', res);
-  if (!res.ok) {
-    throw new Error(`Erreur fetching game ${gameId} boxscore`);
-  }
-
-  return res.json();
-};
-
 // Récupère les derniers matchs complétés avec détails (boxscore)
 export const getTeamLastGamesWithDetails = async (
   team: string,
@@ -98,7 +89,7 @@ export const getTeamLastGamesWithDetails = async (
   const details = await Promise.all(
     completedGames.map(async (game) => {
       try {
-        const boxscore = await getGameBoxscore(game.id);
+        const boxscore = await fetchGameCenterBoxscore(game.id);
         return {
           gameInfo: game,
           boxscore

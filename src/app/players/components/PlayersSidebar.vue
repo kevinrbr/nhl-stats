@@ -75,6 +75,8 @@ watch([playersList, () => props.selectedPlayerId], ([players, selectedId]) => {
 </script>
 
 <template>
+  <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/65 p-3">
+    <h3 class="text-zinc-100 text-sm font-semibold mb-3 px-1">Players</h3>
     <TeamSelect
       v-if="standings"
       v-model="selectedTeam"
@@ -86,4 +88,5 @@ watch([playersList, () => props.selectedPlayerId], ([players, selectedId]) => {
       :selected-player-id="props.selectedPlayerId"
       @select="emit('select-player', $event)"
     />
+  </div>
 </template>

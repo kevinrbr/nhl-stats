@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
+import { RouterLink } from 'vue-router';
+import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
 
 defineProps<{
   game: UpcomingGame;
 }>();
-
-
 
 const emit = defineEmits<{
   (e: 'select', game: UpcomingGame): void;
@@ -13,9 +13,13 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <button
+  <div
+    role="button"
+    tabindex="0"
     @click="emit('select', game)"
-    class="w-full hover:bg-gray-700 rounded-lg p-4 transition-colors border border-gray-700"
+    @keydown.enter.prevent="emit('select', game)"
+    @keydown.space.prevent="emit('select', game)"
+    class="w-full rounded-lg p-4 transition-colors border border-zinc-800/90 bg-zinc-950/35 hover:bg-zinc-800/55 cursor-pointer"
   >
     <div class="flex items-center justify-between gap-4">
       <!-- Home Team (à gauche) -->
@@ -25,15 +29,19 @@ const emit = defineEmits<{
           :alt="game.homeTeam.name"
           class="w-12 h-12 object-contain mb-2"
         />
-        <span class="text-white text-sm font-medium">
+        <RouterLink
+          :to="getTeamsRoute(game.homeTeam.abbrev)"
+          class="text-zinc-100 text-sm font-medium hover:underline underline-offset-2"
+          @click.stop
+        >
           {{ game.homeTeam.abbrev }}
-        </span>
+        </RouterLink>
       </div>
 
       <!-- Game Info -->
       <div class="flex flex-col items-center">
-        <span class="text-gray-400 text-xs mb-1">{{ game.dayAbbrev }}</span>
-        <span class="text-white text-sm font-semibold">{{ game.startTime }}</span>
+        <span class="text-zinc-400 text-xs mb-1">{{ game.dayAbbrev }}</span>
+        <span class="text-zinc-100 text-sm font-semibold">{{ game.startTime }}</span>
       </div>
 
       <!-- Away Team (à droite avec @) -->
@@ -43,10 +51,14 @@ const emit = defineEmits<{
           :alt="game.awayTeam.name"
           class="w-12 h-12 object-contain mb-2"
         />
-        <span class="text-white text-sm font-medium">
+        <RouterLink
+          :to="getTeamsRoute(game.awayTeam.abbrev)"
+          class="text-zinc-100 text-sm font-medium hover:underline underline-offset-2"
+          @click.stop
+        >
           @{{ game.awayTeam.abbrev }}
-        </span>
+        </RouterLink>
       </div>
     </div>
-  </button>
+  </div>
 </template>

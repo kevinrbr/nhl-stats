@@ -15,17 +15,15 @@ const handleSelectPlayer = (player: Player) => {
 </script>
 
 <template>
-  <section class="flex">
-    <aside
-      class="w-[250px] pr-4 sticky self-start top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain"
-    >
+  <section class="app-view app-split">
+    <aside class="app-split-sidebar">
       <PlayersSidebar
         :selected-player-id="selectedPlayerId"
         @select-player="handleSelectPlayer"
       />
     </aside>
 
-    <section class="flex-1">
+    <section class="app-split-content">
       <PlayerDashboard
         :selected-player-id="selectedPlayerId"
         :selected-player="selectedPlayer"

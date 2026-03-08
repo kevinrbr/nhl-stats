@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import type { TeamGameDetails } from '@/app/teams/presenters/teams.presenter';
+import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
 
 const props = withDefaults(defineProps<{
   games?: TeamGameDetails[];
@@ -73,7 +75,12 @@ const formatDate = (dateString: string) => {
             :alt="game.homeTeam.name"
             class="w-5 h-5 flex-shrink-0"
           />
-          <span class="text-zinc-100 truncate">{{ game.homeTeam.abbrev }}</span>
+          <RouterLink
+            :to="getTeamsRoute(game.homeTeam.abbrev)"
+            class="text-zinc-100 truncate hover:text-zinc-200 hover:underline underline-offset-2"
+          >
+            {{ game.homeTeam.abbrev }}
+          </RouterLink>
         </div>
 
         <!-- Score -->
@@ -95,7 +102,12 @@ const formatDate = (dateString: string) => {
 
         <!-- Away Team -->
         <div class="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-          <span class="text-zinc-100 truncate">{{ game.awayTeam.abbrev }}</span>
+          <RouterLink
+            :to="getTeamsRoute(game.awayTeam.abbrev)"
+            class="text-zinc-100 truncate hover:text-zinc-200 hover:underline underline-offset-2"
+          >
+            {{ game.awayTeam.abbrev }}
+          </RouterLink>
           <img 
             :src="game.awayTeam.logo" 
             :alt="game.awayTeam.name"

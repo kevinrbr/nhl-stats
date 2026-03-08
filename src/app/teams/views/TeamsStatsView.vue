@@ -1,27 +1,62 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import TeamsSidebar from '@/app/teams/components/TeamsSidebar.vue';
 import TeamDashboard from '@/app/teams/components/TeamDashboard.vue';
+import {
+  DEFAULT_TEAM_ABBREV,
+  normalizeTeamAbbrev,
+} from '@/app/teams/utils/teamNavigation';
 
-const selectedTeam = ref<string>('COL'); // Valeur par défaut
+const route = useRoute();
+const router = useRouter();
+
+const routeTeam = computed(() =>
+  normalizeTeamAbbrev(route.query.team, DEFAULT_TEAM_ABBREV)
+);
+
+const selectedTeam = ref<string>(routeTeam.value);
+
+watch(routeTeam, (nextTeam) => {
+  if (selectedTeam.value !== nextTeam) {
+    selectedTeam.value = nextTeam;
+  }
+});
+
+watch(selectedTeam, (nextTeam) => {
+  const normalizedTeam = normalizeTeamAbbrev(nextTeam, DEFAULT_TEAM_ABBREV);
+
+  if (selectedTeam.value !== normalizedTeam) {
+    selectedTeam.value = normalizedTeam;
+    return;
+  }
+
+  if (routeTeam.value === normalizedTeam) return;
+
+  void router.replace({
+    name: 'teams',
+    query: {
+      ...route.query,
+      team: normalizedTeam,
+    },
+  });
+});
 
 const handleSelectTeam = (teamAbbrev: string) => {
-  selectedTeam.value = teamAbbrev;
+  selectedTeam.value = normalizeTeamAbbrev(teamAbbrev, DEFAULT_TEAM_ABBREV);
 };
 </script>
 
 <template>
-  <section class="flex">
-    <aside
-      class="w-[250px] pr-4 sticky self-start top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain"
-    >
+  <section class="app-view app-split">
+    <aside class="app-split-sidebar">
       <TeamsSidebar
         :selected-team="selectedTeam"
         @select-team="handleSelectTeam"
       />
     </aside>
 
-    <section class="flex-1">
+    <section class="app-split-content">
       <TeamDashboard
         :team="selectedTeam"
         @select-team="handleSelectTeam"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { RouterLink } from 'vue-router';
 
 import {
   Select,
@@ -20,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useStandingsQuery } from "@/app/standings/queries/useStandingsQuery";
+import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
 
 const DIVISION_MAP: Record<string, string> = {
   atlantique: "Atlantic",
@@ -124,136 +126,145 @@ const sortedTeams = computed(() => {
 </script>
 
 <template>
-  <div>
-    <h2 class="text-5xl font-bold mb-6">Standings</h2>
+  <section class="app-view space-y-5">
+    <header class="rounded-xl border border-zinc-800/80 bg-zinc-900/65 p-5">
+      <h1 class="text-zinc-100 text-3xl font-semibold tracking-tight">Standings</h1>
+      <p class="text-zinc-400 text-sm mt-1">
+        Classement NHL par division et course playoffs
+      </p>
+    </header>
 
-    <div class="flex items-center gap-4 mb-6">
-      <Select v-model="selectedDivision">
-        <SelectTrigger class="w-[280px]">
-          <SelectValue placeholder="Toutes les divisions" />
-        </SelectTrigger>
+    <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/65 p-5">
+      <div class="flex flex-wrap items-center gap-4 mb-6">
+        <Select v-model="selectedDivision">
+          <SelectTrigger class="w-[280px]">
+            <SelectValue placeholder="Toutes les divisions" />
+          </SelectTrigger>
 
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem value="toutes">Toutes les divisions</SelectItem>
-          </SelectGroup>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="toutes">Toutes les divisions</SelectItem>
+            </SelectGroup>
 
-          <SelectGroup>
-            <SelectLabel>Conférence Est</SelectLabel>
-            <SelectItem value="atlantique">Division Atlantique</SelectItem>
-            <SelectItem value="metropolitaine">Division Métropolitaine</SelectItem>
-          </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Conférence Est</SelectLabel>
+              <SelectItem value="atlantique">Division Atlantique</SelectItem>
+              <SelectItem value="metropolitaine">Division Métropolitaine</SelectItem>
+            </SelectGroup>
 
-          <SelectGroup>
-            <SelectLabel>Conférence Ouest</SelectLabel>
-            <SelectItem value="centrale">Division Centrale</SelectItem>
-            <SelectItem value="pacifique">Division Pacifique</SelectItem>
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+            <SelectGroup>
+              <SelectLabel>Conférence Ouest</SelectLabel>
+              <SelectItem value="centrale">Division Centrale</SelectItem>
+              <SelectItem value="pacifique">Division Pacifique</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
 
-      <!-- Légende -->
-      <div class="flex items-center gap-4 text-sm">
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 bg-blue-600/20 border border-blue-600/40 rounded"></div>
-          <span class="text-gray-400">Playoff Position</span>
+        <div class="flex items-center gap-2 rounded-md border border-blue-500/35 bg-blue-500/10 px-3 py-2 text-sm text-zinc-300">
+          <div class="w-3 h-3 bg-blue-500/30 border border-blue-400/60 rounded-sm"></div>
+          <span>Playoff Position</span>
         </div>
       </div>
-    </div>
 
-    <!-- Table -->
-    <Table class="mt-6">
-      <TableHeader>
-        <TableRow>
-          <TableHead class="w-12">#</TableHead>
-          <TableHead
-            class="cursor-pointer select-none"
-            @click="handleSort('teamName')"
-          >
-            Équipe
-            <span v-if="sortKey === 'teamName'">
-              {{ sortOrder === 'asc' ? '↑' : '↓' }}
-            </span>
-          </TableHead>
+      <div class="overflow-x-auto">
+        <Table class="min-w-[720px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead class="w-12">#</TableHead>
+              <TableHead
+                class="cursor-pointer select-none"
+                @click="handleSort('teamName')"
+              >
+                Équipe
+                <span v-if="sortKey === 'teamName'">
+                  {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                </span>
+              </TableHead>
 
-          <TableHead
-            class="cursor-pointer select-none text-center"
-            @click="handleSort('points')"
-          >
-            Points
-            <span v-if="sortKey === 'points'">
-              {{ sortOrder === 'asc' ? '↑' : '↓' }}
-            </span>
-          </TableHead>
+              <TableHead
+                class="cursor-pointer select-none text-center"
+                @click="handleSort('points')"
+              >
+                Points
+                <span v-if="sortKey === 'points'">
+                  {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                </span>
+              </TableHead>
 
-          <TableHead
-            class="cursor-pointer select-none text-center"
-            @click="handleSort('gamesPlayed')"
-          >
-            G
-            <span v-if="sortKey === 'gamesPlayed'">
-              {{ sortOrder === 'asc' ? '↑' : '↓' }}
-            </span>
-          </TableHead>
+              <TableHead
+                class="cursor-pointer select-none text-center"
+                @click="handleSort('gamesPlayed')"
+              >
+                G
+                <span v-if="sortKey === 'gamesPlayed'">
+                  {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                </span>
+              </TableHead>
 
-          <TableHead
-            class="cursor-pointer select-none text-center"
-            @click="handleSort('wins')"
-          >
-            W
-            <span v-if="sortKey === 'wins'">
-              {{ sortOrder === 'asc' ? '↑' : '↓' }}
-            </span>
-          </TableHead>
+              <TableHead
+                class="cursor-pointer select-none text-center"
+                @click="handleSort('wins')"
+              >
+                W
+                <span v-if="sortKey === 'wins'">
+                  {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                </span>
+              </TableHead>
 
-          <TableHead
-            class="cursor-pointer select-none text-center"
-            @click="handleSort('losses')"
-          >
-            L
-            <span v-if="sortKey === 'losses'">
-              {{ sortOrder === 'asc' ? '↑' : '↓' }}
-            </span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
+              <TableHead
+                class="cursor-pointer select-none text-center"
+                @click="handleSort('losses')"
+              >
+                L
+                <span v-if="sortKey === 'losses'">
+                  {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                </span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
 
-      <TableBody>
-        <TableRow
-          v-for="(team, i) in sortedTeams"
-          :key="i"
-          :class="{
-            'bg-blue-600/10 hover:bg-blue-600/20': isInPlayoffs(team),
-          }"
-        >
-          <!-- Position Badge -->
-          <TableCell class="text-center">
-            <span 
-              v-if="getPlayoffBadge(team)"
-              class="inline-flex items-center justify-center w-8 h-8 text-xs font-bold rounded bg-blue-600 text-white"
+          <TableBody>
+            <TableRow
+              v-for="(team, i) in sortedTeams"
+              :key="i"
+              :class="{
+                'bg-blue-600/10 hover:bg-blue-600/20': isInPlayoffs(team),
+              }"
             >
-              {{ getPlayoffBadge(team) }}
-            </span>
-            <span v-else class="text-gray-500 text-sm">
-              {{ i + 1 }}
-            </span>
-          </TableCell>
+              <TableCell class="text-center">
+                <span
+                  v-if="getPlayoffBadge(team)"
+                  class="inline-flex items-center justify-center w-8 h-8 text-xs font-bold rounded bg-blue-600 text-white"
+                >
+                  {{ getPlayoffBadge(team) }}
+                </span>
+                <span v-else class="text-zinc-500 text-sm">
+                  {{ i + 1 }}
+                </span>
+              </TableCell>
 
-          <TableCell class="flex items-center gap-2">
-            <img
-              :src="team.logo"
-              :alt="team.teamName.default"
-              class="w-8 h-8 rounded-sm"
-            />
-            <span>{{ team.teamName.default }}</span>
-          </TableCell>
+              <TableCell class="flex items-center gap-2">
+                <img
+                  :src="team.logo"
+                  :alt="team.teamName.default"
+                  class="w-8 h-8 rounded-sm"
+                />
+                <RouterLink
+                  :to="getTeamsRoute(team.teamAbbrev)"
+                  class="text-zinc-100 hover:text-zinc-200 hover:underline underline-offset-2"
+                >
+                  {{ team.teamName.default }}
+                </RouterLink>
+              </TableCell>
 
-          <TableCell class="text-center font-semibold">{{ team.points }}</TableCell>
-          <TableCell class="text-center">{{ team.gamesPlayed }}</TableCell>
-          <TableCell class="text-center">{{ team.wins }}</TableCell>
-          <TableCell class="text-center">{{ team.losses }}</TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
-  </div>
+              <TableCell class="text-center font-semibold">{{ team.points }}</TableCell>
+              <TableCell class="text-center">{{ team.gamesPlayed }}</TableCell>
+              <TableCell class="text-center">{{ team.wins }}</TableCell>
+              <TableCell class="text-center">{{ team.losses }}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  </section>
 </template>

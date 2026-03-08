@@ -31,7 +31,7 @@ const selectedTeam = computed({
 <template>
   <section class="team-select">
     <Select v-model="selectedTeam">
-      <SelectTrigger class="w-[220px]">
+      <SelectTrigger class="w-full">
         <SelectValue />
       </SelectTrigger>
 

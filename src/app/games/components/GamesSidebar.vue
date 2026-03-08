@@ -8,7 +8,7 @@ const emit = defineEmits<{
 }>();
 
 const { data: gamesByDate, isLoading } = useGamesSchedule();
-console.log(gamesByDate);
+
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
@@ -20,12 +20,12 @@ const formatDate = (dateString: string) => {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto">
-    <h2 class="text-white text-xl font-bold mb-4 sticky top-0 pb-2">
+  <div>
+    <h2 class="text-zinc-100 text-lg font-semibold mb-4 sticky top-0 pb-2 bg-zinc-900/95 backdrop-blur-sm">
       Upcoming Games
     </h2>
 
-    <div v-if="isLoading" class="text-gray-400 text-center py-8">
+    <div v-if="isLoading" class="text-zinc-400 text-center py-8">
       Loading games...
     </div>
 
@@ -36,7 +36,7 @@ const formatDate = (dateString: string) => {
         class="space-y-3"
       >
         <div class="sticky top-12 pb-2">
-          <h3 class="text-gray-300 text-sm font-semibold uppercase tracking-wide">
+          <h3 class="text-zinc-300 text-xs font-semibold uppercase tracking-wide">
             {{ formatDate(dayGames.date) }}
           </h3>
         </div>
@@ -53,7 +53,7 @@ const formatDate = (dateString: string) => {
       </div>
     </div>
 
-    <div v-else class="text-gray-400 text-center py-8">
+    <div v-else class="text-zinc-400 text-center py-8">
       No upcoming games
     </div>
   </div>
