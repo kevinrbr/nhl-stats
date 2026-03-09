@@ -1,19 +1,5 @@
 import { fetchGameCenterBoxscore } from '@/api/services/gamecenter.service';
-
-type BoxscoreTeam = {
-  abbrev?: string;
-  commonName?: {
-    default?: string;
-  };
-  sog?: number;
-  score?: number;
-  logo?: string;
-};
-
-type GameBoxscoreResponse = {
-  homeTeam: BoxscoreTeam;
-  awayTeam: BoxscoreTeam;
-};
+import type { GameCenterBoxscoreResponse } from '@/app/games/types/gameCenter';
 
 type TeamScheduleGame = {
   id: number;
@@ -39,7 +25,7 @@ type LastGamesWithDetailsOptions = {
 
 type TeamLastGameDetails = {
   gameInfo: TeamScheduleGame;
-  boxscore: GameBoxscoreResponse;
+  boxscore: GameCenterBoxscoreResponse;
 };
 
 // Récupère le calendrier de la saison en cours

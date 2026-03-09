@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router';
 import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
 import { useGameCenterBoxscore } from '@/app/games/queries/useGameCenterBoxscore';
 import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
+import GamePlayerInsightsPanel from '@/app/games/components/GamePlayerInsightsPanel.vue';
 import {
   getGameStatusLabel,
   getTeamComparisonRows,
@@ -14,6 +15,8 @@ import {
 const props = defineProps<{
   gameId: number;
   fallbackGame: UpcomingGame | null;
+  showBackButton?: boolean;
+  showGameSummary?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -109,7 +112,7 @@ const statsAvailable = computed(() => {
 
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between gap-3">
+    <div v-if="props.showBackButton" class="flex items-center justify-between gap-3">
       <button
         type="button"
         class="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-1.5 text-zinc-200 text-sm hover:bg-zinc-800/80 transition-colors"
@@ -124,29 +127,10 @@ const statsAvailable = computed(() => {
       </span>
     </div>
 
-    <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4">
+    <div v-if="props.showGameSummary ?? true" class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4">
       <div class="flex items-center justify-between gap-4">
-        <div v-if="awayTeam" class="flex items-center gap-2 min-w-0">
-          <img v-if="awayTeam.logo" :src="awayTeam.logo" :alt="awayTeam.name" class="w-9 h-9 object-contain" />
-          <div class="min-w-0">
-            <RouterLink
-              :to="getTeamsRoute(awayTeam.abbrev)"
-              class="text-zinc-100 text-sm font-semibold hover:underline underline-offset-2 truncate block"
-            >
-              {{ awayTeam.name }}
-            </RouterLink>
-            <p class="text-zinc-400 text-xs">{{ awayTeam.abbrev }}</p>
-          </div>
-        </div>
-
-        <div class="text-center shrink-0">
-          <p class="text-zinc-100 text-2xl font-bold">
-            {{ awayTeam?.score ?? '-' }} <span class="text-zinc-500 px-1">-</span> {{ homeTeam?.score ?? '-' }}
-          </p>
-          <p class="text-zinc-400 text-xs mt-1">{{ gameDateLabel }}</p>
-        </div>
-
-        <div v-if="homeTeam" class="flex items-center gap-2 min-w-0 text-right">
+        <div v-if="homeTeam" class="flex items-center gap-2 min-w-0">
+          <img v-if="homeTeam.logo" :src="homeTeam.logo" :alt="homeTeam.name" class="w-9 h-9 object-contain" />
           <div class="min-w-0">
             <RouterLink
               :to="getTeamsRoute(homeTeam.abbrev)"
@@ -156,7 +140,26 @@ const statsAvailable = computed(() => {
             </RouterLink>
             <p class="text-zinc-400 text-xs">{{ homeTeam.abbrev }}</p>
           </div>
-          <img v-if="homeTeam.logo" :src="homeTeam.logo" :alt="homeTeam.name" class="w-9 h-9 object-contain" />
+        </div>
+
+        <div class="text-center shrink-0">
+          <p class="text-zinc-100 text-2xl font-bold">
+            {{ homeTeam?.score ?? '-' }} <span class="text-zinc-500 px-1">-</span> {{ awayTeam?.score ?? '-' }}
+          </p>
+          <p class="text-zinc-400 text-xs mt-1">{{ gameDateLabel }}</p>
+        </div>
+
+        <div v-if="awayTeam" class="flex items-center gap-2 min-w-0 text-right">
+          <div class="min-w-0">
+            <RouterLink
+              :to="getTeamsRoute(awayTeam.abbrev)"
+              class="text-zinc-100 text-sm font-semibold hover:underline underline-offset-2 truncate block"
+            >
+              {{ awayTeam.name }}
+            </RouterLink>
+            <p class="text-zinc-400 text-xs">{{ awayTeam.abbrev }}</p>
+          </div>
+          <img v-if="awayTeam.logo" :src="awayTeam.logo" :alt="awayTeam.name" class="w-9 h-9 object-contain" />
         </div>
       </div>
 
@@ -188,15 +191,15 @@ const statsAvailable = computed(() => {
           class="rounded-lg border border-zinc-800/80 bg-zinc-950/50 p-2.5"
         >
           <div class="grid grid-cols-[56px_1fr_56px] items-center gap-3">
-            <span class="text-zinc-100 text-sm font-semibold text-left">{{ row.away }}</span>
+            <span class="text-zinc-100 text-sm font-semibold text-left">{{ row.home }}</span>
             <div>
               <p class="text-zinc-400 text-[11px] uppercase tracking-wide text-center">{{ row.label }}</p>
               <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden flex">
-                <div class="h-full bg-zinc-400/80" :style="{ width: `${row.awayPercent}%` }"></div>
                 <div class="h-full bg-sky-500/70" :style="{ width: `${row.homePercent}%` }"></div>
+                <div class="h-full bg-zinc-400/80" :style="{ width: `${row.awayPercent}%` }"></div>
               </div>
             </div>
-            <span class="text-zinc-100 text-sm font-semibold text-right">{{ row.home }}</span>
+            <span class="text-zinc-100 text-sm font-semibold text-right">{{ row.away }}</span>
           </div>
         </div>
       </div>
@@ -205,5 +208,7 @@ const statsAvailable = computed(() => {
         Les stats detaillees ne sont pas encore disponibles pour ce match.
       </p>
     </div>
+
+    <GamePlayerInsightsPanel :game="props.fallbackGame" />
   </div>
 </template>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { TeamGameDetails } from '@/app/teams/presenters/teams.presenter';
 import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
+import TeamRecentGameStats from '@/app/teams/components/TeamRecentGameStats.vue';
 
 const props = withDefaults(defineProps<{
   games?: TeamGameDetails[];
@@ -20,6 +21,12 @@ const recentGames = computed(() => {
     .reverse()
     .slice(0, props.limit);
 });
+
+const selectedGameId = ref<number | null>(null);
+
+const handleSelectGame = (gameId: number) => {
+  selectedGameId.value = selectedGameId.value === gameId ? null : gameId;
+};
 
 const getGameResult = (game: TeamGameDetails) => {
   const teamScore = game.isHome ? game.homeTeam.score : game.awayTeam.score;
@@ -50,12 +57,17 @@ const formatDate = (dateString: string) => {
     </div>
 
     <!-- Games Table -->
-    <div v-else-if="recentGames.length > 0" class="space-y-1">
+    <div v-else-if="recentGames.length > 0" class="space-y-2">
       <div
         v-for="game in recentGames"
         :key="game.id"
-        class="flex items-center gap-2 py-2 px-2 hover:bg-zinc-800/60 rounded transition-colors text-xs"
+        class="rounded-lg border border-transparent hover:border-zinc-800/70 transition-colors"
       >
+        <button
+          type="button"
+          class="w-full flex items-center gap-2 py-2 px-2 hover:bg-zinc-800/60 rounded transition-colors text-xs text-left"
+          @click="handleSelectGame(game.id)"
+        >
         <!-- Result Badge -->
         <div 
           class="w-5 h-5 rounded flex items-center justify-center font-bold flex-shrink-0"
@@ -119,6 +131,15 @@ const formatDate = (dateString: string) => {
         <span class="text-zinc-400 text-xs flex-shrink-0 w-12 text-right">
           {{ formatDate(game.date) }}
         </span>
+        </button>
+
+        <div v-if="selectedGameId === game.id" class="p-2 pt-3">
+          <TeamRecentGameStats
+            :game-id="game.id"
+            :home-team="game.homeTeam"
+            :away-team="game.awayTeam"
+          />
+        </div>
       </div>
     </div>
 

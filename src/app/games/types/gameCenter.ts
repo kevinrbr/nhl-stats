@@ -42,6 +42,15 @@ export interface GameCenterTeam {
 }
 
 export interface GameCenterSkaterStatLine {
+  playerId?: number;
+  sweaterNumber?: number;
+  name?: {
+    default?: string;
+  };
+  goals?: number;
+  assists?: number;
+  points?: number;
+  sog?: number;
   hits?: number;
   blockedShots?: number;
   pim?: number;

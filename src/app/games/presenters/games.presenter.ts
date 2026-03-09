@@ -37,9 +37,16 @@ function isUpcomingGame(game: any, nowMs: number): boolean {
   if (Number.isNaN(startAtMs)) return false;
 
   const normalizedState = String(game?.gameState ?? '').toUpperCase();
-  if (COMPLETED_GAME_STATES.has(normalizedState)) return false;
+  const oneHourMs = 60 * 60 * 1000;
+  const estimatedGameDurationMs = 3 * 60 * 60 * 1000;
+  const recentCompletedWindowMs = estimatedGameDurationMs + oneHourMs;
+  const liveWindowMs = 4 * 60 * 60 * 1000;
 
-  return startAtMs > nowMs;
+  if (COMPLETED_GAME_STATES.has(normalizedState)) {
+    return nowMs - startAtMs <= recentCompletedWindowMs;
+  }
+
+  return startAtMs >= nowMs - liveWindowMs;
 }
 
 export function upcomingGamesPresenter(data: any): GamesByDate[] {

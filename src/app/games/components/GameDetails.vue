@@ -1,32 +1,31 @@
 <script setup lang="ts">
-import { computed, toRefs } from 'vue';
+import { computed, ref, toRefs, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import type { UpcomingGame } from '../presenters/games.presenter';
+import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
 import { useTeamSchedule } from '@/app/teams/queries/useTeamSchedule';
-import { useHeadToHead } from '../composables/useHeadToHead';
+import { useHeadToHead } from '@/app/games/composables/useHeadToHead';
 import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
+import GameStatsPanel from '@/app/games/components/GameStatsPanel.vue';
+import GameTeamRecentFormCards from '@/app/games/components/GameTeamRecentFormCards.vue';
 
 const props = defineProps<{
   game: UpcomingGame;
 }>();
 
-const emit = defineEmits<{
-  (e: 'select-h2h-game', gameId: number): void;
-  (e: 'open-game-stats', gameId: number): void;
-}>();
-
 const { game } = toRefs(props);
-const COMPLETED_GAME_STATES = new Set(['OFF', 'FINAL']);
 const router = useRouter();
+const COMPLETED_GAME_STATES = new Set(['OFF', 'FINAL', 'FINAL_OT', 'FINAL_SO']);
 
 const homeTeam = computed(() => game.value.homeTeam.abbrev);
 const awayTeam = computed(() => game.value.awayTeam.abbrev);
 
-const { data: homeTeamSchedule, isLoading } = useTeamSchedule(homeTeam);
+const { data: homeTeamSchedule, isLoading: isHomeTeamScheduleLoading } = useTeamSchedule(homeTeam);
+
 const homeTeamCompletedGames = computed(() => {
   if (!homeTeamSchedule.value) return [];
+
   return homeTeamSchedule.value.filter((scheduledGame) =>
-    COMPLETED_GAME_STATES.has(scheduledGame.gameState)
+    COMPLETED_GAME_STATES.has((scheduledGame.gameState ?? '').toUpperCase())
   );
 });
 
@@ -35,23 +34,33 @@ const { headToHeadGames, headToHeadStats } = useHeadToHead(
   awayTeam
 );
 
+const selectedStatsGameId = ref(game.value.id);
+
+watch(
+  () => game.value.id,
+  (nextGameId) => {
+    selectedStatsGameId.value = nextGameId;
+  },
+  { immediate: true }
+);
+
+const isViewingHeadToHeadStats = computed(
+  () => selectedStatsGameId.value !== game.value.id
+);
+
 const handleH2HGameClick = (gameId: number) => {
-  emit('select-h2h-game', gameId);
+  selectedStatsGameId.value = gameId;
 };
 
 const handleTeamClick = (teamAbbrev: string) => {
   void router.push(getTeamsRoute(teamAbbrev));
 };
-
-const handleOpenGameStats = () => {
-  emit('open-game-stats', game.value.id);
-};
 </script>
+
 <template>
   <div class="text-zinc-100 space-y-6">
     <div class="border-b border-zinc-700 pb-4">
-      <div class="flex items-center justify-between gap-3 mb-2">
-        <div class="flex items-center gap-2 min-w-0">
+      <div class="flex items-center gap-2 mb-2">
         <img :src="game.homeTeam.logo" class="w-12 h-12" />
         <h2 class="text-2xl font-bold flex items-center gap-2 flex-wrap">
           <button
@@ -71,22 +80,15 @@ const handleOpenGameStats = () => {
           </button>
         </h2>
         <img :src="game.awayTeam.logo" class="w-12 h-12" />
-        </div>
-
-        <button
-          type="button"
-          class="shrink-0 rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800/80 transition-colors"
-          @click="handleOpenGameStats"
-        >
-          Match stats
-        </button>
       </div>
       <p class="text-zinc-400 text-sm">
         {{ game.dayAbbrev }} - {{ game.startTime }}
       </p>
     </div>
 
-    <div v-if="isLoading" class="bg-zinc-800/80 rounded-lg p-4">
+    <GameTeamRecentFormCards :game="game" />
+
+    <div v-if="isHomeTeamScheduleLoading" class="bg-zinc-800/80 rounded-lg p-4">
       <div class="animate-pulse space-y-2">
         <div class="h-3 bg-zinc-700 rounded w-1/2"></div>
         <div class="h-3 bg-zinc-700 rounded w-1/3"></div>
@@ -96,7 +98,7 @@ const handleOpenGameStats = () => {
     <template v-else>
       <div v-if="headToHeadStats && headToHeadStats.total > 0" class="bg-zinc-800/80 rounded-lg p-4">
         <h3 class="text-sm font-semibold text-zinc-400 mb-2">Season H2H</h3>
-        
+
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <img :src="game.homeTeam.logo" class="w-6 h-6" />
@@ -108,11 +110,11 @@ const handleOpenGameStats = () => {
               {{ homeTeam }}
             </button>
           </div>
-          
+
           <div class="px-3 py-1 bg-zinc-700 rounded">
             <span class="text-zinc-100 text-lg font-bold">{{ headToHeadStats.record }}</span>
           </div>
-          
+
           <div class="flex items-center gap-2">
             <button
               type="button"
@@ -134,8 +136,8 @@ const handleOpenGameStats = () => {
           >
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-2 flex-1 min-w-0">
-                <img 
-                  :src="h2hGame.homeTeam.logo" 
+                <img
+                  :src="h2hGame.homeTeam.logo"
                   class="w-6 h-6 flex-shrink-0"
                 />
                 <span
@@ -151,14 +153,14 @@ const handleOpenGameStats = () => {
               </div>
 
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span 
+                <span
                   class="text-sm font-bold"
                   :class="h2hGame.homeTeam.score > h2hGame.awayTeam.score ? 'text-green-400' : 'text-zinc-100'"
                 >
                   {{ h2hGame.homeTeam.score }}
                 </span>
                 <span class="text-zinc-500 text-xs">-</span>
-                <span 
+                <span
                   class="text-sm font-bold"
                   :class="h2hGame.awayTeam.score > h2hGame.homeTeam.score ? 'text-green-400' : 'text-zinc-100'"
                 >
@@ -177,15 +179,15 @@ const handleOpenGameStats = () => {
                 >
                   {{ h2hGame.awayTeam.abbrev }}
                 </span>
-                <img 
-                  :src="h2hGame.awayTeam.logo" 
+                <img
+                  :src="h2hGame.awayTeam.logo"
                   class="w-6 h-6 flex-shrink-0"
                 />
               </div>
 
               <span class="text-zinc-500 text-xs flex-shrink-0">
-                {{ new Date(h2hGame.date).toLocaleDateString('en-US', { 
-                  month: 'short', 
+                {{ new Date(h2hGame.date).toLocaleDateString('en-US', {
+                  month: 'short',
                   day: 'numeric'
                 }) }}
               </span>
@@ -200,5 +202,12 @@ const handleOpenGameStats = () => {
         </p>
       </div>
     </template>
+
+    <GameStatsPanel
+      :game-id="selectedStatsGameId"
+      :fallback-game="game"
+      :show-back-button="false"
+      :show-game-summary="isViewingHeadToHeadStats"
+    />
   </div>
 </template>
