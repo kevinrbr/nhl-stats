@@ -4,11 +4,17 @@ import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
 import type {
   TeamAngleInsightGroup,
   TeamPlayerInsightGroup,
+  TeamStyleProfile,
+  TeamStyleSimilarGames,
 } from '@/app/games/types/gamePlayerInsights';
 import { useGamePlayerInsights } from '@/app/games/composables/useGamePlayerInsights';
 
 const props = defineProps<{
   game: UpcomingGame | null;
+}>();
+
+const emit = defineEmits<{
+  (e: 'select-game', gameId: number): void;
 }>();
 
 const gameRef = toRef(props, 'game');
@@ -25,6 +31,40 @@ function getSampleLabel(group: TeamPlayerInsightGroup): string {
 function getTeamSampleLabel(group: TeamAngleInsightGroup): string {
   if (group.sampleGames <= 1) return `${group.sampleGames} game`;
   return `${group.sampleGames} games`;
+}
+
+function getStyleSampleLabel(group: TeamStyleProfile | TeamStyleSimilarGames): string {
+  if (group.sampleGames <= 1) return `${group.sampleGames} game`;
+  return `${group.sampleGames} games`;
+}
+
+function formatGameDate(date: string): string {
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return '-';
+  return value.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function getSimilarityClass(score: number): string {
+  if (score >= 75) return 'text-emerald-300';
+  if (score >= 60) return 'text-amber-300';
+  return 'text-zinc-400';
+}
+
+function getEdgeBadgeClass(side: 'home' | 'away' | 'even'): string {
+  if (side === 'home') return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
+  if (side === 'away') return 'border-sky-500/40 bg-sky-500/10 text-sky-300';
+  return 'border-zinc-600 bg-zinc-800/40 text-zinc-300';
+}
+
+function getEdgeSideLabel(side: 'home' | 'away' | 'even', homeLabel: string, awayLabel: string): string {
+  if (side === 'home') return homeLabel;
+  if (side === 'away') return awayLabel;
+  return 'Even';
+}
+
+function handleSelectGame(gameId: number): void {
+  if (!Number.isFinite(gameId) || gameId <= 0) return;
+  emit('select-game', gameId);
 }
 </script>
 
@@ -45,6 +85,243 @@ function getTeamSampleLabel(group: TeamAngleInsightGroup): string {
     </div>
 
     <template v-else>
+      <div class="rounded-lg border border-zinc-800/70 bg-zinc-950/50 p-3 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-zinc-200 text-xs font-semibold uppercase tracking-wide">
+            Style Matchup
+          </p>
+          <p class="text-zinc-400 text-[11px]">
+            Similarity:
+            <span class="font-semibold" :class="getSimilarityClass(insights.style.similarity)">
+              {{ insights.style.similarity.toFixed(1) }}%
+            </span>
+          </p>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5">
+          <span
+            v-for="tag in insights.style.matchupTags"
+            :key="`style-matchup-tag-${tag}`"
+            class="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-800/40 text-zinc-200 text-[10px]"
+          >
+            {{ tag }}
+          </span>
+          <span
+            v-if="insights.style.matchupTags.length === 0"
+            class="text-zinc-500 text-[10px]"
+          >
+            No strong style mismatch detected
+          </span>
+        </div>
+
+        <div class="rounded-md border border-zinc-800/80 bg-zinc-900/50 p-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-zinc-300 text-xs font-semibold">Theoretical edge</p>
+            <span
+              class="px-2 py-0.5 rounded border text-[10px] font-medium"
+              :class="getEdgeBadgeClass(insights.style.edge.side)"
+            >
+              {{ getEdgeSideLabel(insights.style.edge.side, homeTeamLabel, awayTeamLabel) }}
+            </span>
+          </div>
+          <p class="text-zinc-100 text-xs mt-1">{{ insights.style.edge.summary }}</p>
+          <p class="text-zinc-500 text-[10px] mt-0.5">
+            confidence {{ insights.style.edge.confidence }}%
+          </p>
+          <div class="mt-2 flex flex-wrap gap-1">
+            <span
+              v-for="reason in insights.style.edge.reasons"
+              :key="`style-edge-reason-${reason}`"
+              class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px]"
+            >
+              {{ reason }}
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-900/50 p-2.5 space-y-2">
+            <p class="text-zinc-300 text-xs font-semibold">
+              {{ homeTeamLabel }} · profile {{ getStyleSampleLabel(insights.style.home) }}
+            </p>
+            <div class="space-y-1.5">
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Pace</span>
+                  <span>{{ insights.style.home.pace.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-sky-500/70" :style="{ width: `${insights.style.home.score.pace}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Def load</span>
+                  <span>{{ insights.style.home.defensiveLoad.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-rose-500/70" :style="{ width: `${insights.style.home.score.defensiveLoad}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Physical</span>
+                  <span>{{ insights.style.home.physicality.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-amber-500/70" :style="{ width: `${insights.style.home.score.physicality}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Chaos</span>
+                  <span>{{ insights.style.home.chaos.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-violet-500/70" :style="{ width: `${insights.style.home.score.chaos}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Discipline</span>
+                  <span>{{ insights.style.home.discipline.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-emerald-500/70" :style="{ width: `${insights.style.home.score.discipline}%` }"></div>
+                </div>
+              </div>
+            </div>
+            <div v-if="insights.style.home.tags.length" class="flex flex-wrap gap-1">
+              <span
+                v-for="tag in insights.style.home.tags"
+                :key="`style-home-tag-${tag}`"
+                class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 text-[10px]"
+              >
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-900/50 p-2.5 space-y-2">
+            <p class="text-zinc-300 text-xs font-semibold">
+              {{ awayTeamLabel }} · profile {{ getStyleSampleLabel(insights.style.away) }}
+            </p>
+            <div class="space-y-1.5">
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Pace</span>
+                  <span>{{ insights.style.away.pace.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-sky-500/70" :style="{ width: `${insights.style.away.score.pace}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Def load</span>
+                  <span>{{ insights.style.away.defensiveLoad.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-rose-500/70" :style="{ width: `${insights.style.away.score.defensiveLoad}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Physical</span>
+                  <span>{{ insights.style.away.physicality.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-amber-500/70" :style="{ width: `${insights.style.away.score.physicality}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Chaos</span>
+                  <span>{{ insights.style.away.chaos.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-violet-500/70" :style="{ width: `${insights.style.away.score.chaos}%` }"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Discipline</span>
+                  <span>{{ insights.style.away.discipline.toFixed(1) }}</span>
+                </div>
+                <div class="mt-1 h-1.5 rounded bg-zinc-800 overflow-hidden">
+                  <div class="h-full bg-emerald-500/70" :style="{ width: `${insights.style.away.score.discipline}%` }"></div>
+                </div>
+              </div>
+            </div>
+            <div v-if="insights.style.away.tags.length" class="flex flex-wrap gap-1">
+              <span
+                v-for="tag in insights.style.away.tags"
+                :key="`style-away-tag-${tag}`"
+                class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 text-[10px]"
+              >
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-900/50 p-2.5">
+            <p class="text-zinc-300 text-xs font-semibold mb-2">
+              {{ homeTeamLabel }} · similar opponents to {{ awayTeamLabel }}
+              ({{ getStyleSampleLabel(insights.style.similarGames.home) }})
+            </p>
+            <div v-if="insights.style.similarGames.home.matches.length" class="space-y-1.5">
+              <button
+                v-for="match in insights.style.similarGames.home.matches"
+                :key="`home-style-match-${match.gameId}`"
+                type="button"
+                class="w-full rounded border border-zinc-800/80 bg-zinc-950/60 px-2 py-1.5 text-left hover:border-zinc-700 hover:bg-zinc-900/70 transition-colors cursor-pointer"
+                @click="handleSelectGame(match.gameId)"
+              >
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="text-zinc-300">vs {{ match.opponentAbbrev }} · {{ formatGameDate(match.gameDate) }}</span>
+                  <span :class="getSimilarityClass(match.similarity)">
+                    {{ match.similarity.toFixed(1) }}%
+                  </span>
+                </div>
+                <p class="text-zinc-500 text-[10px] mt-0.5">
+                  Score {{ match.teamGoals }}-{{ match.opponentGoals }} · SOG {{ match.teamSog }}-{{ match.opponentSog }}
+                </p>
+              </button>
+            </div>
+            <p v-else class="text-zinc-500 text-xs">Pas assez d'historique comparable.</p>
+          </div>
+
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-900/50 p-2.5">
+            <p class="text-zinc-300 text-xs font-semibold mb-2">
+              {{ awayTeamLabel }} · similar opponents to {{ homeTeamLabel }}
+              ({{ getStyleSampleLabel(insights.style.similarGames.away) }})
+            </p>
+            <div v-if="insights.style.similarGames.away.matches.length" class="space-y-1.5">
+              <button
+                v-for="match in insights.style.similarGames.away.matches"
+                :key="`away-style-match-${match.gameId}`"
+                type="button"
+                class="w-full rounded border border-zinc-800/80 bg-zinc-950/60 px-2 py-1.5 text-left hover:border-zinc-700 hover:bg-zinc-900/70 transition-colors cursor-pointer"
+                @click="handleSelectGame(match.gameId)"
+              >
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="text-zinc-300">vs {{ match.opponentAbbrev }} · {{ formatGameDate(match.gameDate) }}</span>
+                  <span :class="getSimilarityClass(match.similarity)">
+                    {{ match.similarity.toFixed(1) }}%
+                  </span>
+                </div>
+                <p class="text-zinc-500 text-[10px] mt-0.5">
+                  Score {{ match.teamGoals }}-{{ match.opponentGoals }} · SOG {{ match.teamSog }}-{{ match.opponentSog }}
+                </p>
+              </button>
+            </div>
+            <p v-else class="text-zinc-500 text-xs">Pas assez d'historique comparable.</p>
+          </div>
+        </div>
+      </div>
+
       <div class="rounded-lg border border-zinc-800/70 bg-zinc-950/50 p-3 space-y-3">
         <div class="flex items-center justify-between gap-2">
           <p class="text-zinc-200 text-xs font-semibold uppercase tracking-wide">

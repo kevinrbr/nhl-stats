@@ -44,6 +44,7 @@ export interface GameCenterTeam {
 export interface GameCenterSkaterStatLine {
   playerId?: number;
   sweaterNumber?: number;
+  position?: string;
   name?: {
     default?: string;
   };
@@ -57,10 +58,20 @@ export interface GameCenterSkaterStatLine {
   giveaways?: number;
   takeaways?: number;
   powerPlayGoals?: number;
+  toi?: string;
 }
 
 export interface GameCenterGoalieStatLine {
+  playerId?: number;
+  sweaterNumber?: number;
+  position?: string;
+  name?: {
+    default?: string;
+  };
   pim?: number;
+  toi?: string;
+  starter?: boolean;
+  decision?: string;
 }
 
 export interface GameCenterTeamPlayerStats {

@@ -3,8 +3,10 @@ import { computed, ref, toRefs, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
 import { useTeamSchedule } from '@/app/teams/queries/useTeamSchedule';
+import { useTeamScheduleBySeason } from '@/app/teams/queries/useTeamScheduleBySeason';
 import { useHeadToHead } from '@/app/games/composables/useHeadToHead';
 import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
+import { getNhlSeasonIdFromDate, getPreviousNhlSeasonId } from '@/app/teams/utils/season';
 import GameStatsPanel from '@/app/games/components/GameStatsPanel.vue';
 import GameTeamRecentFormCards from '@/app/games/components/GameTeamRecentFormCards.vue';
 
@@ -29,9 +31,45 @@ const homeTeamCompletedGames = computed(() => {
   );
 });
 
+const currentSeasonH2hCount = computed(() => {
+  if (!awayTeam.value) return 0;
+
+  return homeTeamCompletedGames.value.filter((scheduledGame) => {
+    const opponent = scheduledGame.isHome
+      ? scheduledGame.awayTeam.abbrev
+      : scheduledGame.homeTeam.abbrev;
+    return opponent === awayTeam.value;
+  }).length;
+});
+
+const currentSeasonId = computed(() => getNhlSeasonIdFromDate(game.value.date));
+const previousSeasonId = computed(() => getPreviousNhlSeasonId(currentSeasonId.value));
+const shouldLoadPreviousSeasonH2h = computed(() => currentSeasonH2hCount.value < 3);
+
+const {
+  data: previousSeasonHomeTeamSchedule,
+  isLoading: isPreviousSeasonHomeTeamScheduleLoading,
+} = useTeamScheduleBySeason(homeTeam, previousSeasonId, shouldLoadPreviousSeasonH2h);
+
+const previousSeasonHomeTeamCompletedGames = computed(() => {
+  if (!previousSeasonHomeTeamSchedule.value) return [];
+
+  return previousSeasonHomeTeamSchedule.value.filter((scheduledGame) =>
+    COMPLETED_GAME_STATES.has((scheduledGame.gameState ?? '').toUpperCase())
+  );
+});
+
 const { headToHeadGames, headToHeadStats } = useHeadToHead(
   homeTeamCompletedGames,
-  awayTeam
+  awayTeam,
+  {
+    fallbackGames: previousSeasonHomeTeamCompletedGames,
+    minGames: 3,
+  }
+);
+
+const isHeadToHeadLoading = computed(
+  () => isHomeTeamScheduleLoading.value || isPreviousSeasonHomeTeamScheduleLoading.value
 );
 
 const selectedStatsGameId = ref(game.value.id);
@@ -50,6 +88,14 @@ const isViewingHeadToHeadStats = computed(
 
 const handleH2HGameClick = (gameId: number) => {
   selectedStatsGameId.value = gameId;
+};
+
+const handleSelectStatsGame = (gameId: number) => {
+  selectedStatsGameId.value = gameId;
+};
+
+const handleBackToUpcomingPreview = () => {
+  selectedStatsGameId.value = game.value.id;
 };
 
 const handleTeamClick = (teamAbbrev: string) => {
@@ -88,7 +134,7 @@ const handleTeamClick = (teamAbbrev: string) => {
 
     <GameTeamRecentFormCards :game="game" />
 
-    <div v-if="isHomeTeamScheduleLoading" class="bg-zinc-800/80 rounded-lg p-4">
+    <div v-if="isHeadToHeadLoading" class="bg-zinc-800/80 rounded-lg p-4">
       <div class="animate-pulse space-y-2">
         <div class="h-3 bg-zinc-700 rounded w-1/2"></div>
         <div class="h-3 bg-zinc-700 rounded w-1/3"></div>
@@ -97,7 +143,7 @@ const handleTeamClick = (teamAbbrev: string) => {
 
     <template v-else>
       <div v-if="headToHeadStats && headToHeadStats.total > 0" class="bg-zinc-800/80 rounded-lg p-4">
-        <h3 class="text-sm font-semibold text-zinc-400 mb-2">Season H2H</h3>
+        <h3 class="text-sm font-semibold text-zinc-400 mb-2">H2H (current + fallback)</h3>
 
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -188,7 +234,8 @@ const handleTeamClick = (teamAbbrev: string) => {
               <span class="text-zinc-500 text-xs flex-shrink-0">
                 {{ new Date(h2hGame.date).toLocaleDateString('en-US', {
                   month: 'short',
-                  day: 'numeric'
+                  day: 'numeric',
+                  year: 'numeric'
                 }) }}
               </span>
             </div>
@@ -198,7 +245,7 @@ const handleTeamClick = (teamAbbrev: string) => {
 
       <div v-else class="bg-zinc-800/80 rounded-lg p-4 text-center">
         <p class="text-zinc-400 text-sm">
-          No previous matchups this season
+          No previous matchups found
         </p>
       </div>
     </template>
@@ -206,8 +253,10 @@ const handleTeamClick = (teamAbbrev: string) => {
     <GameStatsPanel
       :game-id="selectedStatsGameId"
       :fallback-game="game"
-      :show-back-button="false"
+      :show-back-button="isViewingHeadToHeadStats"
       :show-game-summary="isViewingHeadToHeadStats"
+      @back="handleBackToUpcomingPreview"
+      @select-game="handleSelectStatsGame"
     />
   </div>
 </template>

@@ -21,6 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'back'): void;
+  (e: 'select-game', gameId: number): void;
 }>();
 
 const gameIdRef = toRef(props, 'gameId');
@@ -209,6 +210,9 @@ const statsAvailable = computed(() => {
       </p>
     </div>
 
-    <GamePlayerInsightsPanel :game="props.fallbackGame" />
+    <GamePlayerInsightsPanel
+      :game="props.fallbackGame"
+      @select-game="emit('select-game', $event)"
+    />
   </div>
 </template>

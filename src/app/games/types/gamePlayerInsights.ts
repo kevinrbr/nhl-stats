@@ -45,10 +45,66 @@ export interface TeamAngleInsightGroup {
   flags: string[];
 }
 
+export interface TeamStyleScore {
+  pace: number;
+  defensiveLoad: number;
+  physicality: number;
+  chaos: number;
+  discipline: number;
+}
+
+export interface TeamStyleProfile {
+  sampleGames: number;
+  pace: number;
+  defensiveLoad: number;
+  physicality: number;
+  chaos: number;
+  discipline: number;
+  score: TeamStyleScore;
+  tags: string[];
+}
+
+export interface SimilarMatchLine {
+  gameId: number;
+  gameDate: string;
+  opponentAbbrev: string;
+  similarity: number;
+  teamGoals: number;
+  opponentGoals: number;
+  teamSog: number;
+  opponentSog: number;
+}
+
+export interface TeamStyleSimilarGames {
+  sampleGames: number;
+  matches: SimilarMatchLine[];
+}
+
+export interface MatchupStyleEdge {
+  side: 'home' | 'away' | 'even';
+  confidence: number;
+  summary: string;
+  reasons: string[];
+}
+
+export interface MatchupStyleInsights {
+  home: TeamStyleProfile;
+  away: TeamStyleProfile;
+  similarity: number;
+  matchupTags: string[];
+  edge: MatchupStyleEdge;
+  similarGames: {
+    home: TeamStyleSimilarGames;
+    away: TeamStyleSimilarGames;
+  };
+}
+
 export interface MatchupPlayerInsights {
   h2hGameIds: number[];
   homeRecentGameIds: number[];
   awayRecentGameIds: number[];
+  homeStyleGameIds: number[];
+  awayStyleGameIds: number[];
   h2h: {
     home: TeamPlayerInsightGroup;
     away: TeamPlayerInsightGroup;
@@ -67,4 +123,5 @@ export interface MatchupPlayerInsights {
       away: TeamAngleInsightGroup;
     };
   };
+  style: MatchupStyleInsights;
 }

@@ -41,6 +41,19 @@ export const getTeamSchedule = async (team: string): Promise<TeamScheduleRespons
   return res.json();
 };
 
+export const getTeamScheduleBySeason = async (
+  team: string,
+  seasonId: string
+): Promise<TeamScheduleResponse> => {
+  const res = await fetch(`/api-nhl/v1/club-schedule-season/${team}/${seasonId}`);
+
+  if (!res.ok) {
+    throw new Error('Erreur fetching team schedule by season');
+  }
+
+  return res.json();
+};
+
 export function extractTeamScheduleGames(scheduleData: TeamScheduleResponse): TeamScheduleGame[] {
   if (Array.isArray(scheduleData?.games)) return scheduleData.games;
   return (scheduleData?.gamesByMonth ?? []).flatMap((month) => month.games ?? []);

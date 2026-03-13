@@ -1,10 +1,16 @@
 import type { TeamScheduleGame } from '@/app/teams/presenters/teams.presenter';
 import type { GameCenterBoxscoreResponse, GameCenterSkaterStatLine } from '@/app/games/types/gameCenter';
 import type {
+  MatchupStyleEdge,
+  SimilarMatchLine,
   PlayerInsightLine,
   TeamAngleInsightGroup,
   TeamPlayerInsightGroup,
+  TeamStyleProfile,
+  TeamStyleScore,
+  TeamStyleSimilarGames,
 } from '@/app/games/types/gamePlayerInsights';
+import { getTeamStats } from '@/app/games/utils/gameBoxscore';
 
 type InsightMode = 'h2h' | 'recent';
 
@@ -25,6 +31,16 @@ const RECENT_IMPACT_WEIGHTS = {
 const SOG_LINE_VALUE = 30; // over 29.5
 const GOALS_LINE_VALUE = 3; // over 2.5
 
+const STYLE_SCORE_RANGES = {
+  pace: { min: 24, max: 38 },
+  defensiveLoad: { min: 24, max: 38 },
+  physicality: { min: 9, max: 28 },
+  chaos: { min: 8, max: 25 },
+  discipline: { min: 3, max: 15 },
+} as const;
+
+const STYLE_VECTOR_DIMENSIONS = 5;
+
 function toSafeNumber(value: unknown): number {
   const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue : 0;
@@ -32,6 +48,19 @@ function toSafeNumber(value: unknown): number {
 
 function roundToOne(value: number): number {
   return Math.round(value * 10) / 10;
+}
+
+function roundToInteger(value: number): number {
+  return Math.round(value);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function toPercentScale(value: number, min: number, max: number): number {
+  if (max <= min) return 0;
+  return roundToInteger(clamp(((value - min) / (max - min)) * 100, 0, 100));
 }
 
 function isCompletedGame(game: TeamScheduleGame): boolean {
@@ -225,6 +254,252 @@ function getOpponentSide(side: 'homeTeam' | 'awayTeam'): 'homeTeam' | 'awayTeam'
   return side === 'homeTeam' ? 'awayTeam' : 'homeTeam';
 }
 
+function buildStyleMetrics(
+  teamSog: number,
+  opponentSog: number,
+  hits: number,
+  giveaways: number,
+  takeaways: number,
+  pim: number
+): Omit<TeamStyleProfile, 'sampleGames' | 'tags'> {
+  const pace = roundToOne((teamSog + opponentSog) / 2);
+  const defensiveLoad = roundToOne(opponentSog);
+  const physicality = roundToOne(hits);
+  const chaos = roundToOne(giveaways + takeaways);
+  const discipline = roundToOne(pim);
+
+  return {
+    pace,
+    defensiveLoad,
+    physicality,
+    chaos,
+    discipline,
+    score: buildStyleScore(pace, defensiveLoad, physicality, chaos, discipline),
+  };
+}
+
+function buildStyleScore(
+  pace: number,
+  defensiveLoad: number,
+  physicality: number,
+  chaos: number,
+  discipline: number
+): TeamStyleScore {
+  const score: TeamStyleScore = {
+    pace: toPercentScale(pace, STYLE_SCORE_RANGES.pace.min, STYLE_SCORE_RANGES.pace.max),
+    defensiveLoad: toPercentScale(
+      defensiveLoad,
+      STYLE_SCORE_RANGES.defensiveLoad.min,
+      STYLE_SCORE_RANGES.defensiveLoad.max
+    ),
+    physicality: toPercentScale(
+      physicality,
+      STYLE_SCORE_RANGES.physicality.min,
+      STYLE_SCORE_RANGES.physicality.max
+    ),
+    chaos: toPercentScale(chaos, STYLE_SCORE_RANGES.chaos.min, STYLE_SCORE_RANGES.chaos.max),
+    discipline: toPercentScale(
+      discipline,
+      STYLE_SCORE_RANGES.discipline.min,
+      STYLE_SCORE_RANGES.discipline.max
+    ),
+  };
+
+  return score;
+}
+
+function getTeamStyleMetricsForGame(
+  boxscore: GameCenterBoxscoreResponse,
+  teamAbbrev: string
+): Omit<TeamStyleProfile, 'sampleGames' | 'tags'> | null {
+  const teamSide = getTeamSide(boxscore, teamAbbrev);
+  if (!teamSide) return null;
+
+  const opponentSide = getOpponentSide(teamSide);
+  const teamStats = getTeamStats(boxscore, teamSide);
+  const opponentStats = getTeamStats(boxscore, opponentSide);
+
+  return buildStyleMetrics(
+    teamStats.sog,
+    opponentStats.sog,
+    teamStats.hits,
+    teamStats.giveaways,
+    teamStats.takeaways,
+    teamStats.pim
+  );
+}
+
+function getStyleTags(profile: TeamStyleProfile): string[] {
+  const tags: string[] = [];
+
+  if (profile.score.pace >= 65) tags.push('High pace');
+  else if (profile.score.pace <= 35) tags.push('Low event');
+
+  if (profile.score.defensiveLoad >= 65) tags.push('Def pressure');
+  else if (profile.score.defensiveLoad <= 35) tags.push('Shot suppression');
+
+  if (profile.score.physicality >= 65) tags.push('Physical');
+  if (profile.score.chaos >= 65) tags.push('High chaos');
+  if (profile.score.discipline >= 65) tags.push('Penalty prone');
+  if (profile.score.discipline <= 35) tags.push('Disciplined');
+
+  return tags.slice(0, 3);
+}
+
+function getStyleSimilarity(a: TeamStyleScore, b: TeamStyleScore): number {
+  const sumSquareDiff =
+    (a.pace - b.pace) ** 2 +
+    (a.defensiveLoad - b.defensiveLoad) ** 2 +
+    (a.physicality - b.physicality) ** 2 +
+    (a.chaos - b.chaos) ** 2 +
+    (a.discipline - b.discipline) ** 2;
+
+  const distance = Math.sqrt(sumSquareDiff);
+  const maxDistance = Math.sqrt(STYLE_VECTOR_DIMENSIONS * 100 ** 2);
+
+  return roundToOne(clamp(100 - (distance / maxDistance) * 100, 0, 100));
+}
+
+function getMatchupStyleTags(homeStyleProfile: TeamStyleProfile, awayStyleProfile: TeamStyleProfile): string[] {
+  const tags: string[] = [];
+
+  const paceGap = Math.abs(homeStyleProfile.score.pace - awayStyleProfile.score.pace);
+  const defensiveGap = Math.abs(
+    homeStyleProfile.score.defensiveLoad - awayStyleProfile.score.defensiveLoad
+  );
+  const physicalGap = Math.abs(homeStyleProfile.score.physicality - awayStyleProfile.score.physicality);
+  const chaosGap = Math.abs(homeStyleProfile.score.chaos - awayStyleProfile.score.chaos);
+  const disciplineGap = Math.abs(homeStyleProfile.score.discipline - awayStyleProfile.score.discipline);
+  const styleSimilarity = getStyleSimilarity(homeStyleProfile.score, awayStyleProfile.score);
+
+  if (styleSimilarity >= 75) tags.push('Mirror styles');
+  if (styleSimilarity <= 58) tags.push('Style clash');
+  if (paceGap >= 15) tags.push('Tempo gap');
+  if (defensiveGap >= 15) tags.push('Defense gap');
+  if (physicalGap >= 15) tags.push('Physical gap');
+  if (chaosGap >= 15) tags.push('Chaos gap');
+  if (disciplineGap >= 15) tags.push('Discipline gap');
+
+  return tags.slice(0, 4);
+}
+
+type EdgeContext = {
+  homePoints: number;
+  awayPoints: number;
+  homeReasons: string[];
+  awayReasons: string[];
+};
+
+function evaluateStyleEdge(
+  homeStyleProfile: TeamStyleProfile,
+  awayStyleProfile: TeamStyleProfile
+): EdgeContext {
+  const context: EdgeContext = {
+    homePoints: 0,
+    awayPoints: 0,
+    homeReasons: [],
+    awayReasons: [],
+  };
+
+  const homeDiscAdv = awayStyleProfile.score.discipline - homeStyleProfile.score.discipline;
+  if (homeDiscAdv >= 14) {
+    context.homePoints += 2;
+    context.homeReasons.push('better discipline, fewer penalty-risk sequences');
+  }
+  if (homeDiscAdv <= -14) {
+    context.awayPoints += 2;
+    context.awayReasons.push('better discipline, fewer penalty-risk sequences');
+  }
+
+  const homePaceVsOppDefense = homeStyleProfile.score.pace - awayStyleProfile.score.defensiveLoad;
+  if (homePaceVsOppDefense >= 12) {
+    context.homePoints += 1;
+    context.homeReasons.push('tempo profile can stress opponent defensive load');
+  }
+  if (homePaceVsOppDefense <= -12) {
+    context.awayPoints += 1;
+    context.awayReasons.push('tempo profile can stress opponent defensive load');
+  }
+
+  const homeSuppressionVsOppPace = awayStyleProfile.score.pace - homeStyleProfile.score.defensiveLoad;
+  if (homeSuppressionVsOppPace <= -12) {
+    context.homePoints += 1;
+    context.homeReasons.push('shot suppression profile can reduce opponent volume');
+  }
+  if (homeSuppressionVsOppPace >= 12) {
+    context.awayPoints += 1;
+    context.awayReasons.push('shot suppression profile can reduce opponent volume');
+  }
+
+  const homePhysicalAdv = homeStyleProfile.score.physicality - awayStyleProfile.score.physicality;
+  if (homePhysicalAdv >= 14) {
+    context.homePoints += 1;
+    context.homeReasons.push('physical edge in board and net-front battles');
+  }
+  if (homePhysicalAdv <= -14) {
+    context.awayPoints += 1;
+    context.awayReasons.push('physical edge in board and net-front battles');
+  }
+
+  const homeChaosControlAdv =
+    (awayStyleProfile.score.chaos - homeStyleProfile.score.chaos) +
+    (awayStyleProfile.score.discipline - homeStyleProfile.score.discipline);
+  if (homeChaosControlAdv >= 20) {
+    context.homePoints += 1;
+    context.homeReasons.push('cleaner profile versus higher-variance opponent');
+  }
+  if (homeChaosControlAdv <= -20) {
+    context.awayPoints += 1;
+    context.awayReasons.push('cleaner profile versus higher-variance opponent');
+  }
+
+  return context;
+}
+
+function buildMatchupStyleEdge(
+  homeStyleProfile: TeamStyleProfile,
+  awayStyleProfile: TeamStyleProfile,
+  homeTeamAbbrev: string,
+  awayTeamAbbrev: string
+): MatchupStyleEdge {
+  const styleSimilarity = getStyleSimilarity(homeStyleProfile.score, awayStyleProfile.score);
+  const { homePoints, awayPoints, homeReasons, awayReasons } = evaluateStyleEdge(
+    homeStyleProfile,
+    awayStyleProfile
+  );
+
+  const pointGap = Math.abs(homePoints - awayPoints);
+  const confidence = roundToInteger(clamp(52 + pointGap * 11 + (100 - styleSimilarity) * 0.18, 52, 86));
+
+  if (homePoints === awayPoints) {
+    return {
+      side: 'even',
+      confidence: roundToInteger(clamp(50 + (styleSimilarity - 50) * 0.25, 48, 68)),
+      summary: 'No clear stylistic edge',
+      reasons: [
+        'both teams project similar style pressure across key dimensions',
+        'edge likely shifts to execution and special teams on game day',
+      ],
+    };
+  }
+
+  if (homePoints > awayPoints) {
+    return {
+      side: 'home',
+      confidence,
+      summary: `${homeTeamAbbrev} theoretical style edge`,
+      reasons: homeReasons.slice(0, 3),
+    };
+  }
+
+  return {
+    side: 'away',
+    confidence,
+    summary: `${awayTeamAbbrev} theoretical style edge`,
+    reasons: awayReasons.slice(0, 3),
+  };
+}
+
 function getTeamFlags(group: TeamAngleInsightGroup): string[] {
   if (group.sampleGames === 0) return [];
 
@@ -312,4 +587,136 @@ export function buildTeamAngleInsightGroup(
 
   group.flags = getTeamFlags(group);
   return group;
+}
+
+export function buildTeamStyleProfile(
+  teamAbbrev: string,
+  gameIds: number[],
+  boxscoresByGameId: Map<number, GameCenterBoxscoreResponse>
+): TeamStyleProfile {
+  let sampleGames = 0;
+  let pace = 0;
+  let defensiveLoad = 0;
+  let physicality = 0;
+  let chaos = 0;
+  let discipline = 0;
+
+  for (const gameId of gameIds) {
+    const boxscore = boxscoresByGameId.get(gameId);
+    if (!boxscore) continue;
+
+    const styleMetrics = getTeamStyleMetricsForGame(boxscore, teamAbbrev);
+    if (!styleMetrics) continue;
+
+    sampleGames += 1;
+    pace += styleMetrics.pace;
+    defensiveLoad += styleMetrics.defensiveLoad;
+    physicality += styleMetrics.physicality;
+    chaos += styleMetrics.chaos;
+    discipline += styleMetrics.discipline;
+  }
+
+  const safeGames = Math.max(sampleGames, 1);
+  const profile: TeamStyleProfile = {
+    sampleGames,
+    pace: roundToOne(pace / safeGames),
+    defensiveLoad: roundToOne(defensiveLoad / safeGames),
+    physicality: roundToOne(physicality / safeGames),
+    chaos: roundToOne(chaos / safeGames),
+    discipline: roundToOne(discipline / safeGames),
+    score: {
+      pace: 0,
+      defensiveLoad: 0,
+      physicality: 0,
+      chaos: 0,
+      discipline: 0,
+    },
+    tags: [],
+  };
+
+  profile.score = buildStyleScore(
+    profile.pace,
+    profile.defensiveLoad,
+    profile.physicality,
+    profile.chaos,
+    profile.discipline
+  );
+  profile.tags = getStyleTags(profile);
+
+  return profile;
+}
+
+export function buildTeamStyleSimilarGames(
+  teamAbbrev: string,
+  gameIds: number[],
+  boxscoresByGameId: Map<number, GameCenterBoxscoreResponse>,
+  targetOpponentStyle: TeamStyleProfile,
+  targetOpponentAbbrev: string,
+  limit = 3
+): TeamStyleSimilarGames {
+  let sampleGames = 0;
+  const similarMatches: SimilarMatchLine[] = [];
+
+  for (const gameId of gameIds) {
+    const boxscore = boxscoresByGameId.get(gameId);
+    if (!boxscore) continue;
+
+    const teamSide = getTeamSide(boxscore, teamAbbrev);
+    if (!teamSide) continue;
+
+    const opponentSide = getOpponentSide(teamSide);
+    const opponentAbbrev = boxscore[opponentSide].abbrev;
+    if (!opponentAbbrev || opponentAbbrev === targetOpponentAbbrev) continue;
+
+    sampleGames += 1;
+
+    const opponentStyle = getTeamStyleMetricsForGame(boxscore, opponentAbbrev);
+    if (!opponentStyle) continue;
+
+    const similarity = getStyleSimilarity(opponentStyle.score, targetOpponentStyle.score);
+
+    similarMatches.push({
+      gameId: boxscore.id,
+      gameDate: boxscore.gameDate ?? boxscore.startTimeUTC,
+      opponentAbbrev,
+      similarity,
+      teamGoals: toSafeNumber(boxscore[teamSide].score),
+      opponentGoals: toSafeNumber(boxscore[opponentSide].score),
+      teamSog: toSafeNumber(boxscore[teamSide].sog),
+      opponentSog: toSafeNumber(boxscore[opponentSide].sog),
+    });
+  }
+
+  similarMatches.sort((a, b) => {
+    if (b.similarity !== a.similarity) return b.similarity - a.similarity;
+    return new Date(b.gameDate).getTime() - new Date(a.gameDate).getTime();
+  });
+
+  return {
+    sampleGames,
+    matches: similarMatches.slice(0, limit),
+  };
+}
+
+export function buildMatchupStyleSimilarity(
+  homeStyleProfile: TeamStyleProfile,
+  awayStyleProfile: TeamStyleProfile
+): number {
+  return getStyleSimilarity(homeStyleProfile.score, awayStyleProfile.score);
+}
+
+export function buildMatchupStyleTags(
+  homeStyleProfile: TeamStyleProfile,
+  awayStyleProfile: TeamStyleProfile
+): string[] {
+  return getMatchupStyleTags(homeStyleProfile, awayStyleProfile);
+}
+
+export function buildMatchupStyleTheoreticalEdge(
+  homeStyleProfile: TeamStyleProfile,
+  awayStyleProfile: TeamStyleProfile,
+  homeTeamAbbrev: string,
+  awayTeamAbbrev: string
+): MatchupStyleEdge {
+  return buildMatchupStyleEdge(homeStyleProfile, awayStyleProfile, homeTeamAbbrev, awayTeamAbbrev);
 }
