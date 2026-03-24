@@ -26,6 +26,7 @@ export interface TeamPlayerInsightGroup {
 
 export interface TeamAngleInsightGroup {
   sampleGames: number;
+  sogLine: number;
   sogFor: number;
   sogAgainst: number;
   goalsFor: number;
@@ -34,12 +35,12 @@ export interface TeamAngleInsightGroup {
   sogAgainstPerGame: number;
   goalsForPerGame: number;
   goalsAgainstPerGame: number;
-  sogForOver295Count: number;
-  sogAgainstOver295Count: number;
+  sogForOverLineCount: number;
+  sogAgainstOverLineCount: number;
   goalsForOver25Count: number;
   goalsAgainstOver25Count: number;
-  sogForOver295Rate: number;
-  sogAgainstOver295Rate: number;
+  sogForOverLineRate: number;
+  sogAgainstOverLineRate: number;
   goalsForOver25Rate: number;
   goalsAgainstOver25Rate: number;
   flags: string[];
@@ -99,12 +100,32 @@ export interface MatchupStyleInsights {
   };
 }
 
+export type MatchupTopPickType =
+  | 'player_sog_over'
+  | 'player_points_over'
+  | 'player_goals_over'
+  | 'team_sog_over';
+
+export interface MatchupTopPick {
+  id: string;
+  rank: number;
+  type: MatchupTopPickType;
+  title: string;
+  lineLabel: string;
+  confidence: number;
+  hitRate: number;
+  sampleGames: number;
+  teamAbbrev: string;
+  rationale: string;
+  playerId?: number;
+  playerName?: string;
+  playerHeadshot?: string;
+}
+
 export interface MatchupPlayerInsights {
   h2hGameIds: number[];
   homeRecentGameIds: number[];
   awayRecentGameIds: number[];
-  homeStyleGameIds: number[];
-  awayStyleGameIds: number[];
   h2h: {
     home: TeamPlayerInsightGroup;
     away: TeamPlayerInsightGroup;
@@ -123,5 +144,5 @@ export interface MatchupPlayerInsights {
       away: TeamAngleInsightGroup;
     };
   };
-  style: MatchupStyleInsights;
+  topPicks: MatchupTopPick[];
 }

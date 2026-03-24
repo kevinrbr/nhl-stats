@@ -4,32 +4,45 @@ import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
 import type { MatchupPlayerInsights } from '@/app/games/types/gamePlayerInsights';
 import { useTeamSchedule } from '@/app/teams/queries/useTeamSchedule';
 import { useTeamScheduleBySeason } from '@/app/teams/queries/useTeamScheduleBySeason';
+import { useTeamRoster } from '@/app/teams/queries/useTeamRoster';
 import { getNhlSeasonIdFromDate, getPreviousNhlSeasonId } from '@/app/teams/utils/season';
 import { ensureGameCenterBoxscore } from '@/app/games/queries/useGameCenterBoxscore';
+import { useBettingLines } from '@/app/common/composables/useBettingLines';
 import {
-  buildMatchupStyleTags,
-  buildMatchupStyleTheoreticalEdge,
-  buildMatchupStyleSimilarity,
+  buildMatchupTopPicks,
   buildTeamAngleInsightGroup,
   buildTeamPlayerInsightGroup,
-  buildTeamStyleProfile,
-  buildTeamStyleSimilarGames,
   getHeadToHeadGameIds,
   getRecentCompletedGameIds,
 } from '@/app/games/utils/gamePlayerInsights';
 
-const H2H_WINDOW_SIZE = 3;
+const H2H_WINDOW_SIZE = 5;
 const RECENT_WINDOW_SIZE = 5;
-const STYLE_WINDOW_SIZE = 10;
 
 export function useGamePlayerInsights(game: Ref<UpcomingGame | null>) {
   const queryClient = useQueryClient();
+  const { teamSogLine } = useBettingLines();
 
   const homeTeamAbbrev = computed(() => game.value?.homeTeam.abbrev ?? '');
   const awayTeamAbbrev = computed(() => game.value?.awayTeam.abbrev ?? '');
+  const homeTeamRosterKey = computed(() => homeTeamAbbrev.value || undefined);
+  const awayTeamRosterKey = computed(() => awayTeamAbbrev.value || undefined);
 
   const { data: homeTeamSchedule, isLoading: isHomeScheduleLoading } = useTeamSchedule(homeTeamAbbrev);
   const { data: awayTeamSchedule, isLoading: isAwayScheduleLoading } = useTeamSchedule(awayTeamAbbrev);
+  const { data: homeTeamRoster, isLoading: isHomeRosterLoading } = useTeamRoster(homeTeamRosterKey);
+  const { data: awayTeamRoster, isLoading: isAwayRosterLoading } = useTeamRoster(awayTeamRosterKey);
+
+  const homeRosterVersion = computed(() =>
+    homeTeamRoster.value
+      ? `${homeTeamRoster.value.forwards.length}-${homeTeamRoster.value.defensemen.length}-${homeTeamRoster.value.goalies.length}`
+      : '0'
+  );
+  const awayRosterVersion = computed(() =>
+    awayTeamRoster.value
+      ? `${awayTeamRoster.value.forwards.length}-${awayTeamRoster.value.defensemen.length}-${awayTeamRoster.value.goalies.length}`
+      : '0'
+  );
 
   const currentSeasonH2hCount = computed(() => {
     if (!homeTeamSchedule.value || !awayTeamAbbrev.value) return 0;
@@ -66,6 +79,9 @@ export function useGamePlayerInsights(game: Ref<UpcomingGame | null>) {
           game.value?.id ?? 0,
           previousSeasonId.value,
           shouldLoadPreviousSeasonH2h.value,
+          teamSogLine.value,
+          homeRosterVersion.value,
+          awayRosterVersion.value,
         ] as const
     ),
     enabled: computed(
@@ -98,17 +114,9 @@ export function useGamePlayerInsights(game: Ref<UpcomingGame | null>) {
       const h2hGameIds = [...currentSeasonH2hGameIds, ...previousSeasonH2hGameIds];
       const homeRecentGameIds = getRecentCompletedGameIds(homeSchedule, RECENT_WINDOW_SIZE);
       const awayRecentGameIds = getRecentCompletedGameIds(awaySchedule, RECENT_WINDOW_SIZE);
-      const homeStyleGameIds = getRecentCompletedGameIds(homeSchedule, STYLE_WINDOW_SIZE);
-      const awayStyleGameIds = getRecentCompletedGameIds(awaySchedule, STYLE_WINDOW_SIZE);
 
       const uniqueGameIds = Array.from(
-        new Set([
-          ...h2hGameIds,
-          ...homeRecentGameIds,
-          ...awayRecentGameIds,
-          ...homeStyleGameIds,
-          ...awayStyleGameIds,
-        ])
+        new Set([...h2hGameIds, ...homeRecentGameIds, ...awayRecentGameIds])
       );
 
       const boxscores = await Promise.all(
@@ -120,79 +128,122 @@ export function useGamePlayerInsights(game: Ref<UpcomingGame | null>) {
         boxscoresByGameId.set(gameId, boxscores[index]);
       });
 
-      const homeStyleProfile = buildTeamStyleProfile(
+      const h2hHomePlayers = buildTeamPlayerInsightGroup(
         homeTeamAbbrev.value,
-        homeStyleGameIds,
-        boxscoresByGameId
+        h2hGameIds,
+        boxscoresByGameId,
+        'h2h'
       );
-      const awayStyleProfile = buildTeamStyleProfile(
+      const h2hAwayPlayers = buildTeamPlayerInsightGroup(
         awayTeamAbbrev.value,
-        awayStyleGameIds,
-        boxscoresByGameId
+        h2hGameIds,
+        boxscoresByGameId,
+        'h2h'
       );
+      const recentHomePlayers = buildTeamPlayerInsightGroup(
+        homeTeamAbbrev.value,
+        homeRecentGameIds,
+        boxscoresByGameId,
+        'recent'
+      );
+      const recentAwayPlayers = buildTeamPlayerInsightGroup(
+        awayTeamAbbrev.value,
+        awayRecentGameIds,
+        boxscoresByGameId,
+        'recent'
+      );
+
+      const h2hHomeTeamAngles = buildTeamAngleInsightGroup(
+        homeTeamAbbrev.value,
+        h2hGameIds,
+        boxscoresByGameId,
+        {
+          sogLine: teamSogLine.value,
+        }
+      );
+      const h2hAwayTeamAngles = buildTeamAngleInsightGroup(
+        awayTeamAbbrev.value,
+        h2hGameIds,
+        boxscoresByGameId,
+        {
+          sogLine: teamSogLine.value,
+        }
+      );
+      const recentHomeTeamAngles = buildTeamAngleInsightGroup(
+        homeTeamAbbrev.value,
+        homeRecentGameIds,
+        boxscoresByGameId,
+        {
+          sogLine: teamSogLine.value,
+        }
+      );
+      const recentAwayTeamAngles = buildTeamAngleInsightGroup(
+        awayTeamAbbrev.value,
+        awayRecentGameIds,
+        boxscoresByGameId,
+        {
+          sogLine: teamSogLine.value,
+        }
+      );
+
+      const playerHeadshotsById = new Map<number, string>();
+      for (const player of homeTeamRoster.value?.forwards ?? []) {
+        if (player?.id && player.headshot) playerHeadshotsById.set(player.id, player.headshot);
+      }
+      for (const player of homeTeamRoster.value?.defensemen ?? []) {
+        if (player?.id && player.headshot) playerHeadshotsById.set(player.id, player.headshot);
+      }
+      for (const player of homeTeamRoster.value?.goalies ?? []) {
+        if (player?.id && player.headshot) playerHeadshotsById.set(player.id, player.headshot);
+      }
+      for (const player of awayTeamRoster.value?.forwards ?? []) {
+        if (player?.id && player.headshot) playerHeadshotsById.set(player.id, player.headshot);
+      }
+      for (const player of awayTeamRoster.value?.defensemen ?? []) {
+        if (player?.id && player.headshot) playerHeadshotsById.set(player.id, player.headshot);
+      }
+      for (const player of awayTeamRoster.value?.goalies ?? []) {
+        if (player?.id && player.headshot) playerHeadshotsById.set(player.id, player.headshot);
+      }
+
+      const topPicks = buildMatchupTopPicks({
+        homeTeamAbbrev: homeTeamAbbrev.value,
+        awayTeamAbbrev: awayTeamAbbrev.value,
+        h2hHomePlayers,
+        h2hAwayPlayers,
+        recentHomePlayers,
+        recentAwayPlayers,
+        h2hHomeTeamAngles,
+        h2hAwayTeamAngles,
+        recentHomeTeamAngles,
+        recentAwayTeamAngles,
+        teamSogLine: teamSogLine.value,
+        playerHeadshotsById,
+      });
 
       return {
         h2hGameIds,
         homeRecentGameIds,
         awayRecentGameIds,
-        homeStyleGameIds,
-        awayStyleGameIds,
         h2h: {
-          home: buildTeamPlayerInsightGroup(homeTeamAbbrev.value, h2hGameIds, boxscoresByGameId, 'h2h'),
-          away: buildTeamPlayerInsightGroup(awayTeamAbbrev.value, h2hGameIds, boxscoresByGameId, 'h2h'),
+          home: h2hHomePlayers,
+          away: h2hAwayPlayers,
         },
         recent: {
-          home: buildTeamPlayerInsightGroup(
-            homeTeamAbbrev.value,
-            homeRecentGameIds,
-            boxscoresByGameId,
-            'recent'
-          ),
-          away: buildTeamPlayerInsightGroup(
-            awayTeamAbbrev.value,
-            awayRecentGameIds,
-            boxscoresByGameId,
-            'recent'
-          ),
+          home: recentHomePlayers,
+          away: recentAwayPlayers,
         },
         teams: {
           h2h: {
-            home: buildTeamAngleInsightGroup(homeTeamAbbrev.value, h2hGameIds, boxscoresByGameId),
-            away: buildTeamAngleInsightGroup(awayTeamAbbrev.value, h2hGameIds, boxscoresByGameId),
+            home: h2hHomeTeamAngles,
+            away: h2hAwayTeamAngles,
           },
           recent: {
-            home: buildTeamAngleInsightGroup(homeTeamAbbrev.value, homeRecentGameIds, boxscoresByGameId),
-            away: buildTeamAngleInsightGroup(awayTeamAbbrev.value, awayRecentGameIds, boxscoresByGameId),
+            home: recentHomeTeamAngles,
+            away: recentAwayTeamAngles,
           },
         },
-        style: {
-          home: homeStyleProfile,
-          away: awayStyleProfile,
-          similarity: buildMatchupStyleSimilarity(homeStyleProfile, awayStyleProfile),
-          matchupTags: buildMatchupStyleTags(homeStyleProfile, awayStyleProfile),
-          edge: buildMatchupStyleTheoreticalEdge(
-            homeStyleProfile,
-            awayStyleProfile,
-            homeTeamAbbrev.value,
-            awayTeamAbbrev.value
-          ),
-          similarGames: {
-            home: buildTeamStyleSimilarGames(
-              homeTeamAbbrev.value,
-              homeStyleGameIds,
-              boxscoresByGameId,
-              awayStyleProfile,
-              awayTeamAbbrev.value
-            ),
-            away: buildTeamStyleSimilarGames(
-              awayTeamAbbrev.value,
-              awayStyleGameIds,
-              boxscoresByGameId,
-              homeStyleProfile,
-              homeTeamAbbrev.value
-            ),
-          },
-        },
+        topPicks,
       };
     },
   });
@@ -202,6 +253,8 @@ export function useGamePlayerInsights(game: Ref<UpcomingGame | null>) {
       isHomeScheduleLoading.value ||
       isAwayScheduleLoading.value ||
       isPreviousSeasonHomeScheduleLoading.value ||
+      isHomeRosterLoading.value ||
+      isAwayRosterLoading.value ||
       insightsQuery.isLoading.value
   );
 

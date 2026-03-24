@@ -15,6 +15,7 @@ import TeamNextGameCard from '@/app/teams/components/TeamNextGameCard.vue';
 import TeamPlayoffStatus from '@/app/teams/components/TeamPlayoffStatus.vue';
 import TeamRecentGames from '@/app/teams/components/TeamRecentGames.vue';
 import TeamRoadtripStatus from '@/app/teams/components/TeamRoadtripStatus.vue';
+import { useBettingLines } from '@/app/common/composables/useBettingLines';
 
 const emit = defineEmits<{
   (e: 'select-team', teamAbbrev: string): void;
@@ -45,6 +46,7 @@ const selectedTeamLogo = computed(() => teamMeta.value?.logo ?? '');
 const selectedPeriod = ref('season');
 const selectedStat = ref('goals-for');
 const selectedLocation = ref('all');
+const { teamSogLine, teamSogLineLabel } = useBettingLines();
 
 const PERIOD_OPTIONS = [
   { value: 'season', label: 'Season' },
@@ -126,6 +128,18 @@ const periodLabel = computed(
 const locationLabel = computed(
   () => LOCATION_OPTIONS.find((option) => option.value === selectedLocation.value)?.label ?? 'Home + Away'
 );
+
+const isSogStatSelected = computed(
+  () => selectedStat.value === 'sog-for' || selectedStat.value === 'sog-against'
+);
+
+const overSogLineCount = computed(() => {
+  if (!isSogStatSelected.value) return 0;
+  return filteredGames.value.reduce((total, game) => {
+    const statValue = getStatValue(game);
+    return statValue > teamSogLine.value ? total + 1 : total;
+  }, 0);
+});
 
 const chartData = computed(() => {
   const games = filteredGames.value;
@@ -300,6 +314,9 @@ const handleSelectTeam = (teamAbbrev: string) => {
                 <p class="text-zinc-500 text-xs mt-1">
                   Last {{ filteredGames.length }} games
                 </p>
+                <p v-if="isSogStatSelected" class="text-zinc-500 text-xs mt-1">
+                  O{{ teamSogLineLabel }}: {{ overSogLineCount }}/{{ filteredGames.length }}
+                </p>
               </div>
 
               <div class="flex flex-wrap gap-2">
@@ -353,6 +370,18 @@ const handleSelectTeam = (teamAbbrev: string) => {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+
+                <div class="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900/80 px-2.5 py-1.5">
+                  <span class="text-zinc-400 text-xs">SOG line</span>
+                  <input
+                    v-model.number="teamSogLine"
+                    type="number"
+                    min="15.5"
+                    max="45.5"
+                    step="0.5"
+                    class="w-16 rounded border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-sky-500/70"
+                  />
+                </div>
               </div>
             </div>
 
