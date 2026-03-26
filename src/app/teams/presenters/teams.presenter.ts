@@ -22,6 +22,7 @@ export interface TeamScheduleGame {
   id: number;
   date: string;
   gameState: string;
+  gameEndType?: string;
   isHome: boolean;
   homeTeam: {
     abbrev: string;
@@ -67,6 +68,12 @@ type RawScheduleGameData = {
   id: number;
   startTimeUTC: string;
   gameState?: string;
+  periodDescriptor?: {
+    periodType?: string;
+  };
+  gameOutcome?: {
+    lastPeriodType?: string;
+  };
   homeTeam?: RawTeamData;
   awayTeam?: RawTeamData;
 };
@@ -131,6 +138,10 @@ export function teamSchedulePresenter(
         id: game.id,
         date: game.startTimeUTC,
         gameState: game.gameState ?? '',
+        gameEndType:
+          game.gameOutcome?.lastPeriodType?.toUpperCase() ??
+          game.periodDescriptor?.periodType?.toUpperCase() ??
+          '',
         isHome,
         homeTeam: {
           abbrev: home.abbrev ?? '',

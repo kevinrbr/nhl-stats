@@ -13,7 +13,7 @@ const props = defineProps<{
 const router = useRouter();
 const gameRef = toRef(props, 'game');
 const COMPLETED_GAME_STATES = new Set(['OFF', 'FINAL', 'FINAL_OT', 'FINAL_SO']);
-const RECENT_FORM_WINDOW = 5;
+const RECENT_FORM_WINDOW = 10;
 
 const homeTeamAbbrev = computed(() => gameRef.value?.homeTeam.abbrev ?? '');
 const awayTeamAbbrev = computed(() => gameRef.value?.awayTeam.abbrev ?? '');
@@ -29,7 +29,25 @@ type TeamRecentForm = {
   goalsForPerGame: number;
   goalsAgainstPerGame: number;
   streak: string;
+  recentResults: Array<{
+    gameId: number;
+    result: 'V' | 'D';
+    extraTimeType: 'OT' | 'SO' | null;
+  }>;
 };
+
+function getExtraTimeType(gameState: string, gameEndType?: string): 'OT' | 'SO' | null {
+  const normalizedEndType = (gameEndType ?? '').toUpperCase();
+  if (normalizedEndType === 'SO') return 'SO';
+  if (normalizedEndType === 'OT') return 'OT';
+
+  const normalizedState = (gameState ?? '').toUpperCase();
+  if (normalizedState.includes('SO')) return 'SO';
+  if (normalizedState.includes('OT')) return 'OT';
+  if (normalizedState === 'FINAL_SO') return 'SO';
+  if (normalizedState === 'FINAL_OT') return 'OT';
+  return null;
+}
 
 function buildRecentForm(games: TeamScheduleGame[] | undefined): TeamRecentForm | null {
   if (!games?.length) return null;
@@ -45,21 +63,35 @@ function buildRecentForm(games: TeamScheduleGame[] | undefined): TeamRecentForm 
   let losses = 0;
   let goalsFor = 0;
   let goalsAgainst = 0;
+  const recentResults: TeamRecentForm['recentResults'] = [];
 
   const outcomes = completedGames.map((scheduledGame) => {
     const teamScore = scheduledGame.isHome ? scheduledGame.homeTeam.score : scheduledGame.awayTeam.score;
     const opponentScore = scheduledGame.isHome ? scheduledGame.awayTeam.score : scheduledGame.homeTeam.score;
+    const isWin = teamScore > opponentScore;
 
     goalsFor += teamScore;
     goalsAgainst += opponentScore;
 
-    if (teamScore > opponentScore) {
+    if (isWin) {
       wins += 1;
       return 'W';
     }
 
     losses += 1;
     return 'L';
+  });
+
+  completedGames.forEach((scheduledGame) => {
+    const teamScore = scheduledGame.isHome ? scheduledGame.homeTeam.score : scheduledGame.awayTeam.score;
+    const opponentScore = scheduledGame.isHome ? scheduledGame.awayTeam.score : scheduledGame.homeTeam.score;
+    const isWin = teamScore > opponentScore;
+
+    recentResults.push({
+      gameId: scheduledGame.id,
+      result: isWin ? 'V' : 'D',
+      extraTimeType: getExtraTimeType(scheduledGame.gameState, scheduledGame.gameEndType),
+    });
   });
 
   const latestOutcome = outcomes[0];
@@ -77,6 +109,7 @@ function buildRecentForm(games: TeamScheduleGame[] | undefined): TeamRecentForm 
     goalsForPerGame: Math.round((goalsFor / completedGames.length) * 10) / 10,
     goalsAgainstPerGame: Math.round((goalsAgainst / completedGames.length) * 10) / 10,
     streak: `${latestOutcome}${streakCount}`,
+    recentResults,
   };
 }
 
@@ -93,6 +126,12 @@ const handleTeamClick = (teamAbbrev: string) => {
   if (!teamAbbrev) return;
   void router.push(getTeamsRoute(teamAbbrev));
 };
+
+function getResultBadgeClass(result: 'V' | 'D'): string {
+  return result === 'V'
+    ? 'border-emerald-500/35 bg-emerald-500/20 text-emerald-200'
+    : 'border-rose-500/35 bg-rose-500/20 text-rose-200';
+}
 </script>
 
 <template>
@@ -118,21 +157,41 @@ const handleTeamClick = (teamAbbrev: string) => {
       <div class="flex items-center justify-between gap-2 mb-2">
         <button
           type="button"
-          class="bg-transparent border-0 p-0 text-zinc-100 text-sm font-semibold hover:underline underline-offset-2"
+          class="bg-transparent border-0 p-0 text-zinc-100 text-base font-semibold hover:underline underline-offset-2"
           @click="handleTeamClick(homeTeamAbbrev)"
         >
           {{ homeTeamAbbrev }} recent form
         </button>
-        <span class="text-zinc-500 text-[11px]">{{ homeRecentForm?.sampleGames }} games</span>
+        <span class="text-zinc-300 text-xs font-medium">{{ homeRecentForm?.sampleGames }} games</span>
       </div>
-      <div class="space-y-1 text-xs">
-        <p class="text-zinc-300">
+      <div class="space-y-1 text-sm">
+        <p class="text-zinc-200">
           Record:
           <span class="text-zinc-100 font-semibold">{{ homeRecentForm?.wins }}-{{ homeRecentForm?.losses }}</span>
           · Win rate:
           <span class="text-zinc-100 font-semibold">{{ homeRecentForm?.winRate }}%</span>
         </p>
-        <p class="text-zinc-400">
+        <div class="flex flex-wrap gap-1.5 pt-0.5">
+          <div
+            v-for="result in homeRecentForm?.recentResults"
+            :key="result.gameId"
+            class="relative h-7 w-7 rounded border text-xs font-semibold flex items-center justify-center"
+            :class="[
+              getResultBadgeClass(result.result),
+              result.extraTimeType ? 'border-amber-400/80 ring-1 ring-amber-400/80' : '',
+            ]"
+            :title="result.extraTimeType ? `${result.result} (${result.extraTimeType})` : result.result"
+          >
+            {{ result.result }}
+            <span
+              v-if="result.extraTimeType"
+              class="absolute -top-0.5 -right-0.5 rounded bg-amber-400/95 px-1 py-[1px] text-[9px] leading-none font-bold text-zinc-950"
+            >
+              {{ result.extraTimeType }}
+            </span>
+          </div>
+        </div>
+        <p class="text-zinc-300">
           GF/GA: {{ homeRecentForm?.goalsForPerGame.toFixed(1) }} / {{ homeRecentForm?.goalsAgainstPerGame.toFixed(1) }}
           · Streak: <span class="text-zinc-200">{{ homeRecentForm?.streak }}</span>
         </p>
@@ -143,21 +202,41 @@ const handleTeamClick = (teamAbbrev: string) => {
       <div class="flex items-center justify-between gap-2 mb-2">
         <button
           type="button"
-          class="bg-transparent border-0 p-0 text-zinc-100 text-sm font-semibold hover:underline underline-offset-2"
+          class="bg-transparent border-0 p-0 text-zinc-100 text-base font-semibold hover:underline underline-offset-2"
           @click="handleTeamClick(awayTeamAbbrev)"
         >
           {{ awayTeamAbbrev }} recent form
         </button>
-        <span class="text-zinc-500 text-[11px]">{{ awayRecentForm?.sampleGames }} games</span>
+        <span class="text-zinc-300 text-xs font-medium">{{ awayRecentForm?.sampleGames }} games</span>
       </div>
-      <div class="space-y-1 text-xs">
-        <p class="text-zinc-300">
+      <div class="space-y-1 text-sm">
+        <p class="text-zinc-200">
           Record:
           <span class="text-zinc-100 font-semibold">{{ awayRecentForm?.wins }}-{{ awayRecentForm?.losses }}</span>
           · Win rate:
           <span class="text-zinc-100 font-semibold">{{ awayRecentForm?.winRate }}%</span>
         </p>
-        <p class="text-zinc-400">
+        <div class="flex flex-wrap gap-1.5 pt-0.5">
+          <div
+            v-for="result in awayRecentForm?.recentResults"
+            :key="result.gameId"
+            class="relative h-7 w-7 rounded border text-xs font-semibold flex items-center justify-center"
+            :class="[
+              getResultBadgeClass(result.result),
+              result.extraTimeType ? 'border-amber-400/80 ring-1 ring-amber-400/80' : '',
+            ]"
+            :title="result.extraTimeType ? `${result.result} (${result.extraTimeType})` : result.result"
+          >
+            {{ result.result }}
+            <span
+              v-if="result.extraTimeType"
+              class="absolute -top-0.5 -right-0.5 rounded bg-amber-400/95 px-1 py-[1px] text-[9px] leading-none font-bold text-zinc-950"
+            >
+              {{ result.extraTimeType }}
+            </span>
+          </div>
+        </div>
+        <p class="text-zinc-300">
           GF/GA: {{ awayRecentForm?.goalsForPerGame.toFixed(1) }} / {{ awayRecentForm?.goalsAgainstPerGame.toFixed(1) }}
           · Streak: <span class="text-zinc-200">{{ awayRecentForm?.streak }}</span>
         </p>

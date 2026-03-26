@@ -20,13 +20,13 @@ const handleSelectGame = (game: UpcomingGame) => {
     </aside>
 
     <section class="app-split-content">
-      <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/65 p-6 min-h-[calc(100dvh-8rem)]">
+      <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-6 lg:p-7 min-h-[calc(100dvh-8rem)]">
         <GameDetails
           v-if="selectedGame"
           :game="selectedGame"
         />
         <div v-else class="flex items-center justify-center h-full">
-          <p class="text-zinc-400 text-lg">
+          <p class="text-zinc-300 text-xl font-medium">
             Select a game to view details
           </p>
         </div>

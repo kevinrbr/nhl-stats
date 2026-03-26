@@ -167,29 +167,29 @@ const handleTeamClick = (teamAbbrev: string) => {
 
 <template>
   <div class="text-zinc-100 space-y-6">
-    <div class="border-b border-zinc-700 pb-4">
-      <div class="flex items-center gap-2 mb-2">
-        <img :src="game.homeTeam.logo" class="w-12 h-12" />
-        <h2 class="text-2xl font-bold flex items-center gap-2 flex-wrap">
+    <div class="border-b border-zinc-700/80 pb-5">
+      <div class="flex items-center gap-3 mb-2">
+        <img :src="game.homeTeam.logo" class="w-12 h-12 md:w-14 md:h-14 object-contain" />
+        <h2 class="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2.5 flex-wrap">
           <button
             type="button"
-            class="bg-transparent border-0 p-0 hover:underline underline-offset-4"
+            class="bg-transparent border-0 p-0 text-zinc-50 hover:underline underline-offset-4"
             @click="handleTeamClick(game.homeTeam.abbrev)"
           >
             {{ game.homeTeam.name }}
           </button>
-          <span class="text-zinc-400">vs</span>
+          <span class="text-zinc-300">vs</span>
           <button
             type="button"
-            class="bg-transparent border-0 p-0 hover:underline underline-offset-4"
+            class="bg-transparent border-0 p-0 text-zinc-50 hover:underline underline-offset-4"
             @click="handleTeamClick(game.awayTeam.abbrev)"
           >
             {{ game.awayTeam.name }}
           </button>
         </h2>
-        <img :src="game.awayTeam.logo" class="w-12 h-12" />
+        <img :src="game.awayTeam.logo" class="w-12 h-12 md:w-14 md:h-14 object-contain" />
       </div>
-      <p class="text-zinc-400 text-sm">
+      <p class="text-zinc-300 text-base">
         {{ game.dayAbbrev }} - {{ game.startTime }}
       </p>
     </div>
@@ -206,44 +206,44 @@ const handleTeamClick = (teamAbbrev: string) => {
     <template v-else>
       <div
         v-if="headToHeadStats && headToHeadStats.total > 0"
-        class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4 space-y-4"
+        class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-5 space-y-4"
       >
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h3 class="text-zinc-100 text-sm font-semibold">H2H Recent Meetings</h3>
-            <p class="text-zinc-500 text-xs mt-0.5">current season + previous season fallback</p>
+            <h3 class="text-zinc-100 text-base font-semibold">H2H Recent Meetings</h3>
+            <p class="text-zinc-300 text-sm mt-0.5">current season + previous season fallback</p>
           </div>
-          <span class="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-[11px] text-zinc-300">
+          <span class="rounded-md border border-zinc-700 bg-zinc-900/80 px-2.5 py-1 text-xs font-medium text-zinc-200">
             {{ headToHeadStats.total }} games
           </span>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/60 p-2">
-            <p class="text-[10px] uppercase tracking-wide text-zinc-500">Record</p>
-            <p class="text-sm font-semibold text-zinc-100 mt-1">{{ headToHeadStats.record }}</p>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/70 p-3">
+            <p class="text-xs uppercase tracking-wide text-zinc-300">Record</p>
+            <p class="text-lg font-semibold text-zinc-50 mt-1.5">{{ headToHeadStats.record }}</p>
           </div>
-          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/60 p-2">
-            <p class="text-[10px] uppercase tracking-wide text-zinc-500">{{ homeTeam }} GF/G</p>
-            <p class="text-sm font-semibold text-zinc-100 mt-1">
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/70 p-3">
+            <p class="text-xs uppercase tracking-wide text-zinc-300">{{ homeTeam }} GF/G</p>
+            <p class="text-lg font-semibold text-zinc-50 mt-1.5">
               {{ h2hSummary ? h2hSummary.goalsForPerGame.toFixed(1) : '-' }}
             </p>
           </div>
-          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/60 p-2">
-            <p class="text-[10px] uppercase tracking-wide text-zinc-500">{{ homeTeam }} GA/G</p>
-            <p class="text-sm font-semibold text-zinc-100 mt-1">
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/70 p-3">
+            <p class="text-xs uppercase tracking-wide text-zinc-300">{{ homeTeam }} GA/G</p>
+            <p class="text-lg font-semibold text-zinc-50 mt-1.5">
               {{ h2hSummary ? h2hSummary.goalsAgainstPerGame.toFixed(1) : '-' }}
             </p>
           </div>
-          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/60 p-2">
-            <p class="text-[10px] uppercase tracking-wide text-zinc-500">Total goals/g</p>
-            <p class="text-sm font-semibold text-zinc-100 mt-1">
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/70 p-3">
+            <p class="text-xs uppercase tracking-wide text-zinc-300">Total goals/g</p>
+            <p class="text-lg font-semibold text-zinc-50 mt-1.5">
               {{ h2hSummary ? h2hSummary.totalGoalsPerGame.toFixed(1) : '-' }}
             </p>
           </div>
-          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/60 p-2">
-            <p class="text-[10px] uppercase tracking-wide text-zinc-500">One-goal games</p>
-            <p class="text-sm font-semibold text-zinc-100 mt-1">
+          <div class="rounded-md border border-zinc-800/80 bg-zinc-950/70 p-3">
+            <p class="text-xs uppercase tracking-wide text-zinc-300">One-goal games</p>
+            <p class="text-lg font-semibold text-zinc-50 mt-1.5">
               {{ h2hSummary ? `${h2hSummary.oneGoalGames}/${h2hSummary.sampleSize}` : '-' }}
             </p>
           </div>
@@ -254,7 +254,7 @@ const handleTeamClick = (teamAbbrev: string) => {
             v-for="h2hGame in headToHeadGames"
             :key="h2hGame.id"
             type="button"
-            class="w-full rounded-lg border px-3 py-2 text-left transition-colors"
+            class="w-full rounded-lg border px-3.5 py-2.5 text-left transition-colors"
             :class="[
               selectedStatsGameId === h2hGame.id
                 ? 'border-sky-500/40 bg-sky-500/10'
@@ -268,7 +268,7 @@ const handleTeamClick = (teamAbbrev: string) => {
                 <span
                   role="link"
                   tabindex="0"
-                  class="text-zinc-300 text-xs hover:underline underline-offset-2 cursor-pointer"
+                  class="text-zinc-200 text-sm font-medium hover:underline underline-offset-2 cursor-pointer"
                   @click.stop="handleTeamClick(h2hGame.homeTeam.abbrev)"
                   @keydown.enter.stop.prevent="handleTeamClick(h2hGame.homeTeam.abbrev)"
                   @keydown.space.stop.prevent="handleTeamClick(h2hGame.homeTeam.abbrev)"
@@ -276,14 +276,14 @@ const handleTeamClick = (teamAbbrev: string) => {
                   {{ h2hGame.homeTeam.abbrev }}
                 </span>
                 <span
-                  class="text-sm font-semibold"
+                  class="text-base font-semibold"
                   :class="h2hGame.homeTeam.score > h2hGame.awayTeam.score ? 'text-emerald-300' : 'text-zinc-100'"
                 >
                   {{ h2hGame.homeTeam.score }}
                 </span>
-                <span class="text-zinc-500 text-xs">-</span>
+                <span class="text-zinc-400 text-sm">-</span>
                 <span
-                  class="text-sm font-semibold"
+                  class="text-base font-semibold"
                   :class="h2hGame.awayTeam.score > h2hGame.homeTeam.score ? 'text-emerald-300' : 'text-zinc-100'"
                 >
                   {{ h2hGame.awayTeam.score }}
@@ -291,7 +291,7 @@ const handleTeamClick = (teamAbbrev: string) => {
                 <span
                   role="link"
                   tabindex="0"
-                  class="text-zinc-300 text-xs hover:underline underline-offset-2 cursor-pointer"
+                  class="text-zinc-200 text-sm font-medium hover:underline underline-offset-2 cursor-pointer"
                   @click.stop="handleTeamClick(h2hGame.awayTeam.abbrev)"
                   @keydown.enter.stop.prevent="handleTeamClick(h2hGame.awayTeam.abbrev)"
                   @keydown.space.stop.prevent="handleTeamClick(h2hGame.awayTeam.abbrev)"
@@ -302,9 +302,9 @@ const handleTeamClick = (teamAbbrev: string) => {
               </div>
 
               <div class="flex items-center gap-2 shrink-0">
-                <span class="text-zinc-500 text-[11px]">{{ formatH2hGameDate(h2hGame.date) }}</span>
+                <span class="text-zinc-300 text-xs font-medium">{{ formatH2hGameDate(h2hGame.date) }}</span>
                 <span
-                  class="rounded px-1.5 py-0.5 text-[10px] font-semibold border"
+                  class="rounded px-2 py-0.5 text-xs font-semibold border"
                   :class="getResultBadgeClass(h2hGame)"
                 >
                   {{ getResultLabel(h2hGame) }}
@@ -316,7 +316,7 @@ const handleTeamClick = (teamAbbrev: string) => {
       </div>
 
       <div v-else class="bg-zinc-800/80 rounded-lg p-4 text-center">
-        <p class="text-zinc-400 text-sm">
+        <p class="text-zinc-300 text-sm">
           No previous matchups found
         </p>
       </div>

@@ -107,7 +107,7 @@ function getSampleLabel(group: TeamPlayerInsightGroup | TeamAngleInsightGroup): 
 function getHitRateClass(rate: number): string {
   if (rate >= 70) return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
   if (rate >= 50) return 'border-amber-500/40 bg-amber-500/10 text-amber-300';
-  return 'border-zinc-700 bg-zinc-800/40 text-zinc-400';
+  return 'border-zinc-700 bg-zinc-800/40 text-zinc-300';
 }
 
 function getConfidenceClass(confidence: number): string {
@@ -244,7 +244,7 @@ function getAngleValueClass(row: TeamAngleRow, side: 'home' | 'away'): string {
 
   if (side === 'home' && homeBetter) return 'text-emerald-300 font-medium';
   if (side === 'away' && awayBetter) return 'text-emerald-300 font-medium';
-  return 'text-zinc-400';
+  return 'text-zinc-300';
 }
 
 function getFlags(group: TeamAngleInsightGroup): string[] {
@@ -254,10 +254,10 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
 </script>
 
 <template>
-  <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4 space-y-4">
+  <div class="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-5 space-y-5">
     <div class="flex items-center justify-between gap-3">
-      <h3 class="text-zinc-100 text-sm font-semibold">Matchup Insights</h3>
-      <span class="text-zinc-500 text-xs">H2H, recent, team angles</span>
+      <h3 class="text-zinc-100 text-base font-semibold">Matchup Insights</h3>
+      <span class="text-zinc-300 text-sm">H2H, recent, team angles</span>
     </div>
 
     <div v-if="isLoading" class="space-y-2">
@@ -266,30 +266,30 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
       <div class="h-16 bg-zinc-800/70 rounded animate-pulse"></div>
     </div>
 
-    <div v-else-if="isError || !insights" class="text-zinc-400 text-sm">
+    <div v-else-if="isError || !insights" class="text-zinc-300 text-sm">
       Impossible de calculer les tendances pour ce matchup.
     </div>
 
     <template v-else>
-      <section class="rounded-lg border border-zinc-800/70 bg-zinc-950/50 p-3 space-y-3">
+      <section class="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-4 space-y-3">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-zinc-200 text-xs font-semibold uppercase tracking-wide">
+          <p class="text-zinc-100 text-sm font-semibold uppercase tracking-wide">
             Top Picks
           </p>
-          <p class="text-zinc-500 text-[11px]">algo blend h2h + recent + context</p>
+          <p class="text-zinc-300 text-xs">algo blend h2h + recent + context</p>
         </div>
 
-        <div v-if="insights.topPicks.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5">
+        <div v-if="insights.topPicks.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           <article
             v-for="pick in insights.topPicks"
             :key="pick.id"
-            class="rounded-md border p-2.5 space-y-2"
+            class="rounded-md border p-3 space-y-2.5"
             :class="getTopPickCardClass(pick.rank)"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="flex items-start gap-2 min-w-0">
                 <span
-                  class="inline-flex h-5 min-w-[1.4rem] items-center justify-center rounded border border-zinc-700 bg-zinc-900/80 px-1 text-[10px] font-semibold text-zinc-200"
+                  class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded border border-zinc-700 bg-zinc-900/80 px-1 text-xs font-semibold text-zinc-100"
                 >
                   #{{ pick.rank }}
                 </span>
@@ -308,14 +308,14 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
                 />
 
                 <div class="min-w-0">
-                  <p class="text-zinc-100 text-xs font-semibold truncate">{{ pick.title }}</p>
-                  <p class="text-zinc-500 text-[10px] mt-0.5">
+                  <p class="text-zinc-100 text-sm font-semibold truncate">{{ pick.title }}</p>
+                  <p class="text-zinc-300 text-xs mt-0.5">
                     {{ getPickTypeLabel(pick.type) }} · {{ pick.sampleGames }}g
                   </p>
                 </div>
               </div>
 
-              <span class="text-sm font-semibold" :class="getConfidenceClass(pick.confidence)">
+              <span class="text-base font-semibold" :class="getConfidenceClass(pick.confidence)">
                 {{ pick.confidence }}%
               </span>
             </div>
@@ -328,17 +328,17 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
             </div>
 
             <div class="flex items-center justify-between gap-2">
-              <span class="text-[10px] text-zinc-300">
+              <span class="text-xs text-zinc-200 font-medium">
                 Hit {{ formatHitRate(pick.hitRate) }}
               </span>
-              <span class="text-[10px] text-zinc-500">{{ pick.lineLabel }}</span>
+              <span class="text-xs text-zinc-300">{{ pick.lineLabel }}</span>
             </div>
 
-            <p class="text-[10px] text-zinc-500 leading-relaxed">{{ pick.rationale }}</p>
+            <p class="text-xs text-zinc-300 leading-relaxed">{{ pick.rationale }}</p>
           </article>
         </div>
 
-        <p v-else class="text-zinc-500 text-xs">
+        <p v-else class="text-zinc-300 text-sm">
           Pas assez de signal fiable pour proposer des picks.
         </p>
       </section>
@@ -346,11 +346,11 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
       <section
         v-for="section in playerTrendSections"
         :key="section.key"
-        class="rounded-lg border border-zinc-800/70 bg-zinc-950/50 p-3 space-y-3"
+        class="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-4 space-y-3"
       >
         <div class="flex items-center justify-between gap-2">
-          <p class="text-zinc-200 text-xs font-semibold uppercase tracking-wide">{{ section.title }}</p>
-          <p class="text-zinc-500 text-[11px]">{{ section.subtitle }}</p>
+          <p class="text-zinc-100 text-sm font-semibold uppercase tracking-wide">{{ section.title }}</p>
+          <p class="text-zinc-300 text-xs">{{ section.subtitle }}</p>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
@@ -360,58 +360,58 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
               { key: `${section.key}-away`, team: awayTeamLabel, group: section.away },
             ]"
             :key="teamCard.key"
-            class="rounded-md border border-zinc-800/80 bg-zinc-900/55 p-2.5 space-y-2"
+            class="rounded-md border border-zinc-800/80 bg-zinc-900/60 p-3 space-y-2"
           >
             <div class="flex items-center justify-between gap-2">
-              <p class="text-zinc-200 text-xs font-semibold">{{ teamCard.team }}</p>
-              <span class="text-[10px] text-zinc-500">{{ getSampleLabel(teamCard.group) }}</span>
+              <p class="text-zinc-100 text-sm font-semibold">{{ teamCard.team }}</p>
+              <span class="text-xs text-zinc-300">{{ getSampleLabel(teamCard.group) }}</span>
             </div>
 
             <div v-if="teamCard.group.players.length" class="space-y-2">
               <div
                 v-for="player in teamCard.group.players"
                 :key="`${teamCard.key}-${player.key}`"
-                class="rounded-md border border-zinc-800/80 bg-zinc-950/70 px-2.5 py-2"
+                class="rounded-md border border-zinc-800/80 bg-zinc-950/80 px-3 py-2.5"
               >
                 <div class="flex items-center justify-between gap-2">
-                  <p class="text-zinc-100 text-xs font-medium truncate">{{ player.name }}</p>
-                  <span class="text-[10px] text-zinc-400">impact {{ player.impactScore.toFixed(1) }}</span>
+                  <p class="text-zinc-100 text-sm font-medium truncate">{{ player.name }}</p>
+                  <span class="text-xs text-zinc-300">impact {{ player.impactScore.toFixed(1) }}</span>
                 </div>
 
                 <div class="grid grid-cols-3 gap-1 mt-1.5">
-                  <span class="rounded border border-zinc-700 bg-zinc-900/70 px-1.5 py-0.5 text-[10px] text-zinc-300 text-center">
+                  <span class="rounded border border-zinc-700 bg-zinc-900/70 px-1.5 py-0.5 text-xs text-zinc-200 text-center">
                     {{ getPlayerMetric(section.key, player, 'pts') }}
                   </span>
-                  <span class="rounded border border-zinc-700 bg-zinc-900/70 px-1.5 py-0.5 text-[10px] text-zinc-300 text-center">
+                  <span class="rounded border border-zinc-700 bg-zinc-900/70 px-1.5 py-0.5 text-xs text-zinc-200 text-center">
                     {{ getPlayerMetric(section.key, player, 'goals') }}
                   </span>
-                  <span class="rounded border border-zinc-700 bg-zinc-900/70 px-1.5 py-0.5 text-[10px] text-zinc-300 text-center">
+                  <span class="rounded border border-zinc-700 bg-zinc-900/70 px-1.5 py-0.5 text-xs text-zinc-200 text-center">
                     {{ getPlayerMetric(section.key, player, 'sog') }}
                   </span>
                 </div>
 
                 <div class="flex flex-wrap gap-1 mt-1.5">
-                  <span class="px-1.5 py-0.5 rounded border text-[10px]" :class="getHitRateClass(player.sogOver25Rate)">
+                  <span class="px-1.5 py-0.5 rounded border text-xs" :class="getHitRateClass(player.sogOver25Rate)">
                     SOG {{ player.sogOver25Count }}/{{ player.games }} ({{ formatHitRate(player.sogOver25Rate) }})
                   </span>
-                  <span class="px-1.5 py-0.5 rounded border text-[10px]" :class="getHitRateClass(player.pointsOver05Rate)">
+                  <span class="px-1.5 py-0.5 rounded border text-xs" :class="getHitRateClass(player.pointsOver05Rate)">
                     PTS {{ player.pointsOver05Count }}/{{ player.games }} ({{ formatHitRate(player.pointsOver05Rate) }})
                   </span>
-                  <span class="px-1.5 py-0.5 rounded border text-[10px]" :class="getHitRateClass(player.goalsOver05Rate)">
+                  <span class="px-1.5 py-0.5 rounded border text-xs" :class="getHitRateClass(player.goalsOver05Rate)">
                     G {{ player.goalsOver05Count }}/{{ player.games }} ({{ formatHitRate(player.goalsOver05Rate) }})
                   </span>
                 </div>
               </div>
             </div>
 
-            <p v-else class="text-zinc-500 text-xs">Aucun signal joueur.</p>
+            <p v-else class="text-zinc-300 text-sm">Aucun signal joueur.</p>
           </article>
         </div>
       </section>
 
-      <section class="rounded-lg border border-zinc-800/70 bg-zinc-950/50 p-3 space-y-3">
+      <section class="rounded-lg border border-zinc-800/70 bg-zinc-950/60 p-4 space-y-3">
         <div class="flex items-center justify-between">
-          <p class="text-zinc-200 text-xs font-semibold uppercase tracking-wide">Team Angles</p>
+          <p class="text-zinc-100 text-sm font-semibold uppercase tracking-wide">Team Angles</p>
           <div class="flex items-center gap-2">
             <input
               v-model.number="teamSogLine"
@@ -419,9 +419,9 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
               min="15.5"
               max="45.5"
               step="0.5"
-              class="w-20 rounded border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-sky-500/70"
+              class="w-24 rounded border border-zinc-700 bg-zinc-900/80 px-2 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-sky-500/70"
             />
-            <span class="text-zinc-300 text-[11px] font-medium">{{ formatSogLineLabel(teamSogLineLabel) }} SOG</span>
+            <span class="text-zinc-200 text-xs font-medium">{{ formatSogLineLabel(teamSogLineLabel) }} SOG</span>
           </div>
         </div>
 
@@ -429,50 +429,50 @@ function getFlags(group: TeamAngleInsightGroup): string[] {
           <article
             v-for="section in teamAngleSections"
             :key="section.key"
-            class="rounded-md border border-zinc-800/80 bg-zinc-900/55 p-2.5 space-y-2"
+            class="rounded-md border border-zinc-800/80 bg-zinc-900/60 p-3 space-y-2"
           >
             <div class="flex items-center justify-between gap-2">
-              <p class="text-zinc-200 text-xs font-semibold">{{ section.title }}</p>
-              <p class="text-[10px] text-zinc-500">{{ section.subtitle }}</p>
+              <p class="text-zinc-100 text-sm font-semibold">{{ section.title }}</p>
+              <p class="text-xs text-zinc-300">{{ section.subtitle }}</p>
             </div>
 
             <div class="space-y-1.5">
               <div
                 v-for="row in getAngleRows(section)"
                 :key="`${section.key}-${row.key}`"
-                class="grid grid-cols-[94px_1fr_94px] gap-2 items-center rounded border border-zinc-800/70 bg-zinc-950/70 px-2 py-1.5"
+                class="grid grid-cols-[110px_1fr_110px] gap-2 items-center rounded border border-zinc-800/70 bg-zinc-950/80 px-2.5 py-2"
               >
-                <span class="text-[10px] text-right truncate" :class="getAngleValueClass(row, 'home')">
+                <span class="text-xs text-right truncate" :class="getAngleValueClass(row, 'home')">
                   {{ row.homeText }}
                 </span>
-                <span class="text-[10px] text-zinc-500 text-center truncate">{{ row.label }}</span>
-                <span class="text-[10px] text-left truncate" :class="getAngleValueClass(row, 'away')">
+                <span class="text-xs text-zinc-300 text-center truncate">{{ row.label }}</span>
+                <span class="text-xs text-left truncate" :class="getAngleValueClass(row, 'away')">
                   {{ row.awayText }}
                 </span>
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-              <div class="rounded border border-zinc-800/70 bg-zinc-950/70 p-2">
-                <p class="text-[10px] text-zinc-500 mb-1">{{ homeTeamLabel }} flags</p>
+              <div class="rounded border border-zinc-800/70 bg-zinc-950/80 p-2.5">
+                <p class="text-xs text-zinc-300 mb-1.5">{{ homeTeamLabel }} flags</p>
                 <div class="flex flex-wrap gap-1">
                   <span
                     v-for="flag in getFlags(section.home)"
                     :key="`${section.key}-home-${flag}`"
-                    class="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900/60 text-[10px] text-zinc-300"
+                    class="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900/60 text-xs text-zinc-200"
                   >
                     {{ flag }}
                   </span>
                 </div>
               </div>
 
-              <div class="rounded border border-zinc-800/70 bg-zinc-950/70 p-2">
-                <p class="text-[10px] text-zinc-500 mb-1">{{ awayTeamLabel }} flags</p>
+              <div class="rounded border border-zinc-800/70 bg-zinc-950/80 p-2.5">
+                <p class="text-xs text-zinc-300 mb-1.5">{{ awayTeamLabel }} flags</p>
                 <div class="flex flex-wrap gap-1">
                   <span
                     v-for="flag in getFlags(section.away)"
                     :key="`${section.key}-away-${flag}`"
-                    class="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900/60 text-[10px] text-zinc-300"
+                    class="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900/60 text-xs text-zinc-200"
                   >
                     {{ flag }}
                   </span>
