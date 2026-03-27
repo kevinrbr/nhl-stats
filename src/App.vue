@@ -15,6 +15,14 @@ import { RouterLink, RouterView } from 'vue-router'
         </RouterLink>
 
         <RouterLink
+          to="/standings"
+          class="app-nav-link"
+          exact-active-class="app-nav-link-active"
+        >
+          Classement
+        </RouterLink>
+
+        <RouterLink
           to="/teams"
           class="app-nav-link"
           exact-active-class="app-nav-link-active"
