@@ -10,6 +10,12 @@ const emit = defineEmits<{
   (e: 'select-game', gameId: UpcomingGame): void;
 }>();
 
+const props = withDefaults(defineProps<{
+  isPremium?: boolean;
+}>(), {
+  isPremium: false,
+});
+
 const { data: gamesByDate, isLoading } = useGamesSchedule();
 const activeTab = ref<GamesSidebarTab>('upcoming');
 
@@ -28,6 +34,28 @@ const emptyMessage = computed(() =>
     ? 'No upcoming games'
     : 'No past games available'
 );
+
+const freeGameId = computed<number | null>(() => {
+  const upcomingFirst = gamesByDate.value?.upcomingGames?.[0]?.games?.[0]?.id;
+  if (typeof upcomingFirst === 'number') return upcomingFirst;
+
+  const pastFirst = gamesByDate.value?.pastGames?.[0]?.games?.[0]?.id;
+  if (typeof pastFirst === 'number') return pastFirst;
+
+  return null;
+});
+
+const displayedGamesByDateWithAccess = computed(() => {
+  const unlockedGameId = freeGameId.value;
+
+  return displayedGamesByDate.value.map((day) => ({
+    ...day,
+    gamesWithAccess: day.games.map((game) => ({
+      game,
+      locked: !props.isPremium && unlockedGameId !== null && game.id !== unlockedGameId,
+    })),
+  }));
+});
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -79,9 +107,9 @@ const formatDate = (dateString: string) => {
       Loading games...
     </div>
 
-    <div v-else-if="displayedGamesByDate.length" class="space-y-6">
+    <div v-else-if="displayedGamesByDateWithAccess.length" class="space-y-6">
       <div 
-        v-for="dayGames in displayedGamesByDate" 
+        v-for="dayGames in displayedGamesByDateWithAccess" 
         :key="dayGames.date"
         class="space-y-3"
       >
@@ -93,9 +121,10 @@ const formatDate = (dateString: string) => {
 
         <div class="space-y-2">
           <GameCard
-            v-for="game in dayGames.games"
+            v-for="{ game, locked } in dayGames.gamesWithAccess"
             :key="game.id"
             :game="game"
+            :locked="locked"
             @select="emit('select-game', $event)"
           />
         </div>

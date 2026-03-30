@@ -16,6 +16,7 @@ interface TeamOption {
 const props = defineProps<{
   modelValue: string
   teams: TeamOption[]
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -30,7 +31,7 @@ const selectedTeam = computed({
 
 <template>
   <section class="team-select">
-    <Select v-model="selectedTeam">
+    <Select v-model="selectedTeam" :disabled="props.disabled">
       <SelectTrigger class="w-full">
         <SelectValue />
       </SelectTrigger>

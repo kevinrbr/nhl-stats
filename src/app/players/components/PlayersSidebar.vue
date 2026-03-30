@@ -9,8 +9,10 @@ import type { Player } from '@/app/players/types/player';
 
 const props = withDefaults(defineProps<{
   selectedPlayerId?: string;
+  isPremium?: boolean;
 }>(), {
   selectedPlayerId: '',
+  isPremium: false,
 });
 
 const emit = defineEmits<{
@@ -24,11 +26,15 @@ const { data: rosters } = useTeamRoster(selectedTeam);
 const teams = computed(() => {
     if (!standings.value) return [];
 
-    return standings.value.map(team => ({
+    return [...standings.value]
+      .sort((a, b) => a.teamName.default.localeCompare(b.teamName.default))
+      .map(team => ({
         name: team.teamName.default,
         abbrev: team.teamAbbrev,
-    }));
+      }));
 });
+
+const firstAllowedTeam = computed(() => teams.value[0]?.abbrev ?? 'COL');
 
 const playersByPosition = computed<PlayersByPosition>(() => {
   if (!rosters.value) {
@@ -63,11 +69,20 @@ const playersList = computed<Player[]>(() => [
   ...playersByPosition.value.goalies,
 ]);
 
-watch([playersList, () => props.selectedPlayerId], ([players, selectedId]) => {
+const firstAllowedPlayer = computed<Player | null>(() => playersList.value[0] ?? null);
+
+watch([() => props.isPremium, firstAllowedTeam], ([premium, allowedTeam]) => {
+  if (!premium && selectedTeam.value !== allowedTeam) {
+    selectedTeam.value = allowedTeam;
+  }
+}, { immediate: true });
+
+watch([playersList, () => props.selectedPlayerId, () => props.isPremium], ([players, selectedId, premium]) => {
   if (!players.length) return;
 
-  const selectedPlayer =
-    players.find((player) => player.id.toString() === selectedId) ?? players[0];
+  const selectedPlayer = premium
+    ? players.find((player) => player.id.toString() === selectedId) ?? players[0]
+    : firstAllowedPlayer.value;
 
   if (!selectedPlayer) return;
   emit('select-player', selectedPlayer);
@@ -81,11 +96,19 @@ watch([playersList, () => props.selectedPlayerId], ([players, selectedId]) => {
       v-if="standings"
       v-model="selectedTeam"
       :teams="teams"
+      :disabled="!props.isPremium"
     />
+    <p
+      v-if="!props.isPremium"
+      class="mt-2 text-[11px] rounded border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-amber-200"
+    >
+      Mode free: 1 équipe + 1 joueur.
+    </p>
     <PlayersList 
       v-if="rosters" 
       :players="playersByPosition"
       :selected-player-id="props.selectedPlayerId"
+      :is-premium="props.isPremium"
       @select="emit('select-player', $event)"
     />
   </div>

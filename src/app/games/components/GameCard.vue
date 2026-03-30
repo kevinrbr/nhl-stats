@@ -3,23 +3,34 @@ import type { UpcomingGame } from '@/app/games/presenters/games.presenter';
 import { RouterLink } from 'vue-router';
 import { getTeamsRoute } from '@/app/teams/utils/teamNavigation';
 
-defineProps<{
+const props = withDefaults(defineProps<{
   game: UpcomingGame;
-}>();
+  locked?: boolean;
+}>(), {
+  locked: false,
+});
 
 const emit = defineEmits<{
   (e: 'select', game: UpcomingGame): void;
 }>();
+
+const handleSelect = () => {
+  if (props.locked) return;
+  emit('select', props.game);
+};
 </script>
 
 <template>
   <div
-    role="button"
-    tabindex="0"
-    @click="emit('select', game)"
-    @keydown.enter.prevent="emit('select', game)"
-    @keydown.space.prevent="emit('select', game)"
-    class="w-full rounded-lg p-4 transition-colors border border-zinc-800/90 bg-zinc-950/35 hover:bg-zinc-800/55 cursor-pointer"
+    :role="props.locked ? undefined : 'button'"
+    :tabindex="props.locked ? -1 : 0"
+    @click="handleSelect"
+    @keydown.enter.prevent="handleSelect"
+    @keydown.space.prevent="handleSelect"
+    class="w-full rounded-lg p-4 transition-colors border border-zinc-800/90 bg-zinc-950/35"
+    :class="props.locked
+      ? 'opacity-70 cursor-not-allowed'
+      : 'hover:bg-zinc-800/55 cursor-pointer'"
   >
     <div class="flex items-center justify-between gap-4">
       <div class="flex flex-col items-center flex-1">
@@ -56,6 +67,13 @@ const emit = defineEmits<{
           @{{ game.awayTeam.abbrev }}
         </RouterLink>
       </div>
+    </div>
+
+    <div
+      v-if="props.locked"
+      class="mt-3 rounded-md border border-amber-500/35 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200"
+    >
+      Premium requis pour ouvrir ce match
     </div>
   </div>
 </template>

@@ -17,6 +17,7 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.100.1",
     "@tanstack/vue-query": "^5.92.0",
     "@unovis/ts": "^1.6.2",
     "@unovis/vue": "^1.6.2",

@@ -4,8 +4,10 @@ import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{
   selectedTeam?: string;
+  isPremium?: boolean;
 }>(), {
   selectedTeam: 'COL',
+  isPremium: false,
 });
 
 const emit = defineEmits<{
@@ -21,7 +23,13 @@ const sortedTeams = computed(() => {
     .sort((a, b) => a.teamName.default.localeCompare(b.teamName.default));
 });
 
+const firstTeamAbbrev = computed(() => sortedTeams.value[0]?.teamAbbrev ?? null);
+
 const handleTeamClick = (teamAbbrev: string) => {
+  if (!props.isPremium && firstTeamAbbrev.value && teamAbbrev !== firstTeamAbbrev.value) {
+    return;
+  }
+
   emit('select-team', teamAbbrev);
 };
 </script>
@@ -37,16 +45,30 @@ const handleTeamClick = (teamAbbrev: string) => {
       >
         <button
           @click="handleTeamClick(team.teamAbbrev)"
-          class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/70 transition-colors text-left"
-          :class="{ 'bg-zinc-800/90': props.selectedTeam === team.teamAbbrev }"
+          class="w-full flex items-center justify-between gap-3 p-2 rounded-lg transition-colors text-left"
+          :class="[
+            props.selectedTeam === team.teamAbbrev ? 'bg-zinc-800/90' : 'hover:bg-zinc-800/70',
+            !props.isPremium && firstTeamAbbrev && team.teamAbbrev !== firstTeamAbbrev
+              ? 'opacity-70 cursor-not-allowed'
+              : '',
+          ]"
         >
-          <img 
-            :src="team.logo" 
-            :alt="team.teamName.default"
-            class="w-8 h-8 object-contain"
-          />
-          <span class="text-zinc-100 text-sm truncate">
-            {{ team.teamName.default }}
+          <div class="flex items-center gap-3 min-w-0">
+            <img 
+              :src="team.logo" 
+              :alt="team.teamName.default"
+              class="w-8 h-8 object-contain"
+            />
+            <span class="text-zinc-100 text-sm truncate">
+              {{ team.teamName.default }}
+            </span>
+          </div>
+
+          <span
+            v-if="!props.isPremium && firstTeamAbbrev && team.teamAbbrev !== firstTeamAbbrev"
+            class="text-[11px] rounded border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 text-amber-200"
+          >
+            Premium
           </span>
         </button>
       </li>
